@@ -1,0 +1,7 @@
+env
+run.sh
+public
+source/static/*.min.js
+source/static/*.min.css
+*.pyc
+node_modules

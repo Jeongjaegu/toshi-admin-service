@@ -1,0 +1,73 @@
+{% extends "index.html" %}
+{% block body %}
+<h1>Users ({{ total }})</h1>
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Token Id</th>
+      <th>Username</th>
+      <th>Balance</th>
+      <th>Name</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>
+	<a href="/user/{{ user.token_id }}">
+	  <img src="{{ user.avatar }}" width="30" height="30">
+	  {{ user.token_id }}
+	</a>
+      </td>
+      <td>
+	<a href="/user/{{ user.token_id }}">
+	  @{{ user.username }}
+	</a>
+      </td>
+      <td>
+	{% if user.balance %}
+	Ξ {{ user.balance.confirmed_balance | to_eth }}
+	{% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
+	(Ξ {{ user.balance.unconfirmed_balance | to_eth }})
+	{% endif %}
+	{% else %}
+	<span class="badge badge-warning">unknown</span>
+	{% endif %}
+      </td>
+      <td>
+	{{ user.name if user.name else '' }}
+      </td>
+      <td>
+	{{ user.location if user.location else '' }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav>
+  <ul class="pagination justify-content-center">
+    <li class="page-item{% if page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/users?page=1">First</a>
+    </li>
+    <li class="page-item{% if page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/users?page={{ page - 1 }}">Previous</a>
+    </li>
+    {% for page_num in range(1, total_pages + 1) %}
+    {% if page_num < page - 5 and page_num + 10 < total_pages %}
+    {% elif page_num > page + 5 and page_num - 10 > 1 %}
+    {% else %}
+      <li class="page-item{% if page_num == page %} active{% endif %}">
+	<a class="page-link" href="/users?page={{ page_num }}">{{ page_num }}</a>
+      </li>
+    {% endif %}
+    {% endfor %}
+    <li class="page-item{% if page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/users?page={{ page + 1 }}">Next</a>
+    </li>
+    <li class="page-item{% if page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/users?page={{ total_pages }}">Last</a>
+    </li>
+  </ul>
+</nav>
+{% endblock %}

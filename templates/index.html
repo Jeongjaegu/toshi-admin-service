@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Token Admin Service{% if title %} - {{ title }}{% endif %}</title>
+    <link rel="stylesheet" href="/public/tether.min.css">
+    <link rel="stylesheet" href="/public/bootstrap.min.css">
+    <link rel="stylesheet" href="/public/style.css">
+  </head>
+  <body>
+    <div class="container">
+      <nav class="header navbar navbar-light rounded navbar-toggleable-md" style="background-color: #00be6d;">
+	<a class="navbar-brand tokenlogo" href="/">
+	  {% include 'token_svg.html' %}
+	</a>
+	<div class="collapse navbar-collapse justify-content-end">
+	  <ul class="navbar-nav">
+	    <li class="nav-item">
+	      <span class="navbar-text">{% if user.name %}{{ user.name }} {% endif %}@{{ user.username }}</span>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link" href="/logout">logout</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="navbar-brand">
+		<img src="{{ user.avatar }}" width="30" height="30" alt="">
+	      </a>
+	    </li>
+	  </ul>
+	</div>
+      </nav>
+      <ul class="nav">
+	<li class="nav-item">
+	  <a class="nav-link{% if not page %} active{% endif %}" href="/">Home</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link{% if page == 'users' %} active{% endif %}" href="/users">Users</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link{% if page == 'tx' %} active{% endif %}" href="/txs">Transactions</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link{% if page == 'apps' %} active{% endif %}" href="/apps">Apps</a>
+	</li>
+      </ul>
+      <div class="container">
+	{% block body %}
+	{% endblock %}
+      </div>
+      <script src="/public/jquery.min.js"></script>
+      <script src="/public/tether.min.js"></script>
+      <script src="/public/bootstrap.min.js"></script>
+      {% block script %}
+      <script src="/public/index.js"></script>
+      {% endblock %}
+    </div>
+  </body>
+</html>

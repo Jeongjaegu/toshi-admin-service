@@ -1,0 +1,150 @@
+{% extends "index.html" %}
+{% block body %}
+<nav class="nav">
+  <a class="nav-link active" data-toggle="tab" href="#main" role="tab"><h4>Transaction <small>{{ hash }}</small></h4></a>
+  <a class="nav-link{% if not node %} disabled{% endif %}" data-toggle="tab" href="#raw" role="tab">raw</a>
+  <a class="nav-link{% if not receipt %} disabled{% endif %}" data-toggle="tab" href="#receipt" role="tab">receipt</a>
+</nav>
+{% if error %}
+<div class="alert alert-danger" role="alert">
+  <strong>Oh snap!</strong> {{ error }}
+</div>
+{% endif %}
+{% if not db and node %}
+<div class="alert alert-warning" role="alert">
+  <strong>Warning:</strong> Transaction not tracked in database.
+</div>
+{% endif %}
+{% if not node %}
+<div class="alert alert-warning" role="alert">
+  <strong>Not Found!</strong> Transaction not found on network.
+</div>
+{% else %}
+<div class="tab-content">
+  <div class="tab-pane active" id="main">
+    <table class="table table-hover table-responsive">
+      <tbody>
+	<tr>
+	  <th>from</th>
+	  <td>
+	    {% if from_user %}
+	    <a href="/user/{{ from_user.token_id }}">
+	      <img src="{{ from_user.avatar }}" width="30" height="30">
+	      @{{ from_user.username }}
+	    </a>
+	    {% else %}
+	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.from }}.png" width="30" height="30">
+	    {{ node.from }}
+	    {% endif %}
+	  </td>
+	</tr>
+	<tr>
+	  {% if node.to %}
+	  <th>to</th>
+	  <td>
+	    {% if to_user %}
+	    <a href="/user/{{ to_user.token_id }}">
+	      <img src="{{ to_user.avatar }}" width="30" height="30">
+	      @{{ to_user.username }}
+	    </a>
+	    {% elif node.to %}
+	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.to }}.png" width="30" height="30">
+	    {{ node.to }}
+	    {% endif %}
+	  </td>
+	  {% elif node.creates %}
+	  <th>created contract</th>
+	  <td>
+	    {% if receipt %}
+	    <img src="https://token-id-service.herokuapp.com/identicon/{{ receipt.contractAddress }}.png" width="30" height="30">
+	    {{ receipt.contractAddress }}
+	    {% else %}
+	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.creates }}.png" width="30" height="30">
+	    {{ node.creates }}
+	    {% endif %}
+	  </td>
+	  {% endif %}
+	</tr>
+	<tr>
+	  <th>status</th>
+	  <td>
+	    {% if db %}
+	    {% if db.last_status == 'confirmed' %}
+	    <span class="badge badge-success">Confirmed</span>
+	    {% elif db.last_status == 'unconfirmed' or not db.last_status %}
+	    {% if node.blockNumber %}
+	    <span class="badge badge-warning">Confirmed on network but unconfirmed in database</span>
+	    {% else %}
+	    <span class="badge badge-info">Unconfirmed</span>
+	    {% endif %}
+	    {% elif db.status == 'error' %}
+	    <span class="badge badge-error">Error</span>
+	    {% endif %}
+	    {% endif %}
+	    {% if node.blockNumber %}
+	    in block #{{ node.blockNumber | parse_int }}{% if node.blockNumber %} ({{ block_number - (node.blockNumber | parse_int) }} confirmations){% endif %}
+	    {% endif %}
+	  </td>
+	</tr>
+	<tr>
+	  <th>value</th>
+	  <td>Ξ {{ node.value | to_eth }}</td>
+	</tr>
+	{% if db %}
+	<tr>
+	  <th>timestamp</th>
+	  <td>{{ db.created }}</td>
+	</tr>
+	{% endif %}
+	<tr>
+	  <th>gas provided</th>
+	  <td>{{ node.gas | parse_int }}</td>
+	</tr>
+	<tr>
+	  <th>gas price</th>
+	  <td>Ξ {{ node.gasPrice | to_eth }}</td>
+	</tr>
+	{% if receipt %}
+	<tr>
+	  <th>gas used</th>
+	  <td>{{ receipt.gasUsed | parse_int }}</td>
+	</tr>
+	{% endif %}
+	{% if node.input != "0xx" %}
+	<tr>
+	  <th>input</th>
+	  <td><pre>{{ node.input }}</pre></td>
+	</tr>
+	{% endif %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tab-pane" id="raw">
+    <table class="table table-hover table-responsive" class="hidden">
+      <tbody>
+	{% for item in node|dictsort %}
+	<tr>
+	  <th>{{ item[0] }}</th>
+	  <td>{{ item[1] }}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if receipt %}
+  <div class="tab-pane" id="receipt">
+    <table class="table table-hover table-responsive" class="hidden">
+      <tbody>
+	{% for item in receipt|dictsort %}
+	<tr>
+	  <th>{{ item[0] }}</th>
+	  <td>{{ item[1] }}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

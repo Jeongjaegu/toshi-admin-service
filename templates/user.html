@@ -1,0 +1,43 @@
+{% extends "index.html" %}
+{% block body %}
+<h4><img src="{{ token_user.avatar }}" width="30" height="30">{{ token_user.token_id }}</h4>
+<table class="table table-hover table-responsive">
+  <tbody>
+    <tr>
+      <th>Userame</th>
+      <td>@{{ token_user.username }}</td>
+    </tr>
+    {% if token_user.name %}
+    <tr>
+      <th>Name</th>
+      <td>{{ token_user.name }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <th>Payment Address</th>
+      <td>{{ token_user.payment_address }}</td>
+    </tr>
+    <tr>
+      <th>Balance</th>
+      <td>
+	{% if token_user.balance %}
+      	Ξ {{ token_user.balance.confirmed_balance | to_eth }}
+	{% if token_user.balance.unconfirmed_balance != token_user.balance.confirmed_balance %}
+	(Ξ {{ token_user.balance.unconfirmed_balance | to_eth }})
+	{% endif %}
+	{% else %}
+	<span class="badge badge-warning">unknown</span>
+	{% endif %}
+      </td>
+    </tr>
+    {% if token_user.location %}
+    <tr>
+      <th>Location</th>
+      <td>{{ token_user.location }}
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+<h4>Recent Transactions</h4>
+{% include 'tx_list_table.html' %}
+{% endblock %}
