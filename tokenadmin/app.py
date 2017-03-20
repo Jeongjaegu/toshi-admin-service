@@ -6,6 +6,7 @@ import string
 import logging
 import os
 import functools
+from urllib.parse import urlencode
 
 from asyncbb.database import prepare_database, create_pool
 from asyncbb.log import configure_logger, log as asyncbb_log
@@ -102,10 +103,15 @@ class App(Sanic):
             uri = '/' + uri
         if prefixed:
             def response(handler):
+                handler_name = getattr(handler, '__name__', '')
                 handler = add_config(handler)
-                self.router.add(uri="/live{}".format(uri), methods=methods, handler=handler,
+                lh = functools.partial(handler)
+                lh.__name__ = '{}_live'.format(handler_name)
+                dh = functools.partial(handler)
+                dh.__name__ = '{}_dev'.format(handler_name)
+                self.router.add(uri="/live{}".format(uri), methods=methods, handler=lh,
                                 host=host)
-                self.router.add(uri="/dev{}".format(uri), methods=methods, handler=handler,
+                self.router.add(uri="/dev{}".format(uri), methods=methods, handler=dh,
                                 host=host)
             return response
         else:
@@ -318,6 +324,11 @@ async def get_tx(request, conf, current_user, tx_hash):
 
     return html(await env.get_template("tx.html").render_async(**context))
 
+sortable_user_columns = ['created', 'username', 'name', 'location', 'reputation_score']
+sortable_user_columns.extend(['-{}'.format(col) for col in sortable_user_columns])
+# specify which columns should be sorted in descending order by default
+negative_user_columns = ['created', 'reputation_score']
+
 @app.route("/users", prefixed=True)
 @requires_login
 async def get_users(request, conf, current_user):
@@ -326,9 +337,17 @@ async def get_users(request, conf, current_user):
         page = 1
     limit = 10
     offset = (page - 1) * limit
+    order_by = request.args.get('order_by', None)
+    order = ('created', 'DESC')
+    if order_by:
+        if order_by in sortable_user_columns:
+            if order_by[0] == '-':
+                order = (order_by[1:], 'ASC' if order_by[1:] in negative_user_columns else 'DESC')
+            else:
+                order = (order_by, 'DESC' if order_by in negative_user_columns else 'ASC')
     async with conf.db.id.acquire() as con:
         rows = await con.fetch(
-            "SELECT * FROM users ORDER BY created DESC OFFSET $1 LIMIT $2",
+            "SELECT * FROM users ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
             offset, limit)
         count = await con.fetchrow(
             "SELECT COUNT(*) FROM users")
@@ -344,9 +363,21 @@ async def get_users(request, conf, current_user):
 
     total_pages = count['count'] // limit
 
+    def get_qargs(page=page, order_by=order_by):
+        qargs = {'page': page}
+        if order_by:
+            if order_by[0] == '+':
+                order_by = order_by[1:]
+            elif order_by[0] != '-':
+                # toggle sort order
+                if order[0] == order_by and order[1] == ('DESC' if order_by in negative_user_columns else 'ASC'):
+                    order_by = '-{}'.format(order_by)
+            qargs['order_by'] = order_by
+        return urlencode(qargs)
+
     return html(await env.get_template("users.html").render_async(
         users=users, current_user=current_user, environment=conf.name, page="users",
-        total=count['count'], total_pages=total_pages, current_page=page))
+        total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
 
 @app.route("/user/<token_id>", prefixed=True)
 @requires_login
