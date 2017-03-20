@@ -1,6 +1,20 @@
 {% extends "index.html" %}
 {% block body %}
-<h1>Users ({{ total }})</h1>
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#">Users ({{ total }})</a>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+    </ul>
+    <form class="form-inline my-2 my-lg-0" action="/{{ environment }}/users" method="GET">
+      <input class="form-control mr-sm-2" name="query" type="text" placeholder="Search" value="{{ get_qargs(as_dict=True)['query'] }}">
+      {% for key, value in get_qargs(page=1,as_list=True,query=None,order_by=None) %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+  </div>
+</nav>
 <table class="table table-hover">
   <thead>
     <tr>

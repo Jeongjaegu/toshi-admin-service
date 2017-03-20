@@ -262,7 +262,7 @@ async def get_txs(request, conf, user):
         tx['to_user'] = await get_token_user_from_payment_address(conf, tx['to_address'])
         txs.append(tx)
 
-    total_pages = count['count'] // limit
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
 
     return html(await env.get_template("txs.html").render_async(txs=txs, current_user=user, environment=conf.name, page="txs",
                                                                 total=count['count'], total_pages=total_pages, current_page=page))
@@ -338,6 +338,7 @@ async def get_users(request, conf, current_user):
     limit = 10
     offset = (page - 1) * limit
     order_by = request.args.get('order_by', None)
+    search_query = request.args.get('query', None)
     order = ('created', 'DESC')
     if order_by:
         if order_by in sortable_user_columns:
@@ -345,12 +346,42 @@ async def get_users(request, conf, current_user):
                 order = (order_by[1:], 'ASC' if order_by[1:] in negative_user_columns else 'DESC')
             else:
                 order = (order_by, 'DESC' if order_by in negative_user_columns else 'ASC')
-    async with conf.db.id.acquire() as con:
-        rows = await con.fetch(
-            "SELECT * FROM users ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
-            offset, limit)
-        count = await con.fetchrow(
-            "SELECT COUNT(*) FROM users")
+    where_clause = ''
+    if search_query:
+        apps = None
+        # strip punctuation
+        query = ''.join([c for c in search_query if c not in string.punctuation])
+        # split words and add in partial matching flags
+        query = '|'.join(['{}:*'.format(word) for word in query.split(' ') if word])
+        args = [offset, limit, query]
+        if order_by:
+            query_order = "ORDER BY {} {}".format(*order)
+        else:
+            # default order by rank
+            query_order = "ORDER BY TS_RANK_CD(t1.tsv, TO_TSQUERY($3)) DESC, name, username"
+        sql = ("SELECT * FROM "
+               "(SELECT * FROM users, TO_TSQUERY($3) AS q "
+               "WHERE (tsv @@ q){}) AS t1 "
+               "{} "
+               "OFFSET $1 LIMIT $2"
+               .format(" AND is_app = $4" if apps is not None else "", query_order))
+        count_args = [query]
+        count_sql = ("SELECT COUNT(*) FROM users, TO_TSQUERY($1) AS q "
+                     "WHERE (tsv @@ q){}"
+                     .format(" AND is_app = $2" if apps is not None else ""))
+        if apps is not None:
+            args.append(apps)
+            count_args.append(apps)
+        async with conf.db.id.acquire() as con:
+            rows = await con.fetch(sql, *args)
+            count = await con.fetchrow(count_sql, *count_args)
+    else:
+        async with conf.db.id.acquire() as con:
+            rows = await con.fetch(
+                "SELECT * FROM users ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+                offset, limit)
+            count = await con.fetchrow(
+                "SELECT COUNT(*) FROM users".format(where_clause))
     users = []
     for row in rows:
         usr = fix_avatar_for_user(conf.urls.id, dict(row))
@@ -361,9 +392,9 @@ async def get_users(request, conf, current_user):
 
         users.append(usr)
 
-    total_pages = count['count'] // limit
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
 
-    def get_qargs(page=page, order_by=order_by):
+    def get_qargs(page=page, order_by=order_by, query=search_query, as_list=False, as_dict=False):
         qargs = {'page': page}
         if order_by:
             if order_by[0] == '+':
@@ -373,6 +404,12 @@ async def get_users(request, conf, current_user):
                 if order[0] == order_by and order[1] == ('DESC' if order_by in negative_user_columns else 'ASC'):
                     order_by = '-{}'.format(order_by)
             qargs['order_by'] = order_by
+        if query:
+            qargs['query'] = query
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
         return urlencode(qargs)
 
     return html(await env.get_template("users.html").render_async(

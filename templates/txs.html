@@ -1,6 +1,15 @@
 {% extends "index.html" %}
 {% block body %}
-<h1>TXS</h1>
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#">Transactions</a>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+    </ul>
+    <form class="form-inline my-2 my-lg-0">
+    </form>
+  </div>
+</nav>
 {% include 'tx_list_table.html' %}
 <nav>
   <ul class="pagination justify-content-center">
