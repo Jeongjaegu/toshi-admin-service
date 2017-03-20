@@ -8,6 +8,7 @@
       <th>Username</th>
       <th>Balance</th>
       <th>Name</th>
+      <th>Reputation</th>
       <th>Location</th>
     </tr>
   </thead>
@@ -37,6 +38,19 @@
       </td>
       <td>
 	{{ user.name if user.name else '' }}
+      </td>
+      <td>
+	{% if user.reputation_score %}
+	{% if user.reputation_score < 1 %}☆{% endif %}
+	{% if user.reputation_score >= 1 %}★{% endif %}
+	{% if user.reputation_score >= 2 %}★{% endif %}
+	{% if user.reputation_score >= 3 %}★{% endif %}
+	{% if user.reputation_score >= 4 %}★{% endif %}
+        {% if user.reputation_score >= 5 %}★{% endif %}
+        {% else %}
+	—
+	{% endif %}
+	 ({{ user.review_count }})
       </td>
       <td>
 	{{ user.location if user.location else '' }}

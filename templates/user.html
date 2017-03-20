@@ -7,6 +7,22 @@
       <th>Userame</th>
       <td>@{{ user.username }}</td>
     </tr>
+    <tr>
+      <th>Reputation</th>
+      <td>
+	{% if user.reputation_score %}
+	{% if user.reputation_score < 1 %}☆{% endif %}
+	{% if user.reputation_score >= 1 %}★{% endif %}
+	{% if user.reputation_score >= 2 %}★{% endif %}
+	{% if user.reputation_score >= 3 %}★{% endif %}
+	{% if user.reputation_score >= 4 %}★{% endif %}
+        {% if user.reputation_score >= 5 %}★{% endif %}
+        {% else %}
+	—
+	{% endif %}
+	 ({{ user.review_count }})
+      </td>
+    </tr>
     {% if user.name %}
     <tr>
       <th>Name</th>
