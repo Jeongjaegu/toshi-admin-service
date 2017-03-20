@@ -57,12 +57,18 @@ heroku config:set SSH_KEY=$(cat path/to/your/keys/id_rsa | base64)
 heroku config:set PGSQL_STUNNEL_ENABLED=1
 heroku config:set NODE_ENV=development
 heroku config:set ID_SERVICE_LOGIN_URL=https://token-id-service.herokuapp.com
-heroku config:set ID_SERVICE_DATA_URL=https://token-id-service-development.herokuapp.com
-heroku config:set ETH_SERVICE_DATA_URL=https://token-eth-service-development.herokuapp.com
-heroku config:set ID_SERVICE_DATABASE_URL=...
-heroku config:set ETH_SERVICE_DATABASE_URL=...
-heroku config:set STUNNEL_URLS="DATABASE_URL ETH_SERVICE_DATABASE_URL ID_SERVICE_DATABASE_URL"
-heroku config:set ETHEREUM_NODE_URL=...
+heroku config:set DEV_ID_SERVICE_URL=https://token-id-service-development.herokuapp.com
+heroku config:set DEV_ETH_SERVICE_URL=https://token-eth-service-development.herokuapp.com
+heroku config:set DEV_ID_SERVICE_DATABASE_URL=...
+heroku config:set DEV_ETH_SERVICE_DATABASE_URL=...
+heroku config:set DEV_ETHEREUM_NODE_URL=...
+heroku config:set LIVE_ID_SERVICE_URL=https://token-id-service.herokuapp.com
+heroku config:set LIVE_ETH_SERVICE_URL=https://token-eth-service.herokuapp.com
+heroku config:set LIVE_ID_SERVICE_DATABASE_URL=...
+heroku config:set LIVE_ETH_SERVICE_DATABASE_URL=...
+heroku config:set LIVE_ETHEREUM_NODE_URL=...
+
+heroku config:set STUNNEL_URLS="DATABASE_URL DEV_ETH_SERVICE_DATABASE_URL DEV_ID_SERVICE_DATABASE_URL LIVE_ETH_SERVICE_DATABASE_URL LIVE_ID_SERVICE_DATABASE_URL"
 ```
 
 The `Procfile` and `runtime.txt` files required for running on heroku
@@ -71,5 +77,5 @@ are provided.
 ### Start
 
 ```
-heroku ps:scale web:1
+heroku ps:scale web=1
 ```

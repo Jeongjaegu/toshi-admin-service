@@ -11,10 +11,10 @@
   <tbody>
     {% for tx in txs %}
     <tr {% if not tx.last_status or tx.last_status == 'unconfirmed' %}class="table-danger"{% endif %}>
-      <td><a href="/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
+      <td><a href="/{{ environment }}/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
       <td>
 	{% if tx.from_user %}
-	<a href="/user/{{ tx.from_user.token_id }}">
+	<a href="/{{ environment }}/user/{{ tx.from_user.token_id }}">
 	  <img src="{{ tx.from_user.avatar }}" width="30" height="30">
 	  @{{ tx.from_user.username }}
 	</a>
@@ -25,7 +25,7 @@
       </td>
       <td>
 	{% if tx.to_user %}
-	<a href="/user/{{ tx.to_user.token_id }}">
+	<a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
 	  <img src="{{ tx.to_user.avatar }}" width="30" height="30">
 	  @{{ tx.to_user.username }}
 	</a>

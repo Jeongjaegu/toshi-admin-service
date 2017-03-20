@@ -18,33 +18,47 @@
 	<div class="collapse navbar-collapse justify-content-end">
 	  <ul class="navbar-nav">
 	    <li class="nav-item">
-	      <span class="navbar-text">{% if user.name %}{{ user.name }} {% endif %}@{{ user.username }}</span>
+	      <span class="navbar-text">{% if current_user.name %}{{ current_user.name }} {% endif %}@{{ current_user.username }}</span>
 	    </li>
 	    <li class="nav-item">
 	      <a class="nav-link" href="/logout">logout</a>
 	    </li>
 	    <li class="nav-item">
 	      <a class="navbar-brand">
-		<img src="{{ user.avatar }}" width="30" height="30" alt="">
+		<img src="{{ current_user.avatar }}" width="30" height="30" alt="">
 	      </a>
 	    </li>
 	  </ul>
 	</div>
       </nav>
-      <ul class="nav">
-	<li class="nav-item">
-	  <a class="nav-link{% if not page %} active{% endif %}" href="/">Home</a>
-	</li>
-	<li class="nav-item">
-	  <a class="nav-link{% if page == 'users' %} active{% endif %}" href="/users">Users</a>
-	</li>
-	<li class="nav-item">
-	  <a class="nav-link{% if page == 'tx' %} active{% endif %}" href="/txs">Transactions</a>
-	</li>
-	<li class="nav-item">
-	  <a class="nav-link{% if page == 'apps' %} active{% endif %}" href="/apps">Apps</a>
-	</li>
-      </ul>
+      <nav class="navbar navbar-light navbar-toggleable-sm bg-faded justify-content-center">
+	<div class="navbar-collapse collapse">
+	  {% if environment %}
+	  <ul class="navbar-nav mx-auto w-100">
+	    <li class="nav-item">
+	      <a class="nav-link{% if page == 'home' %} active{% endif %}" href="/{{ environment }}">Home</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link{% if page == 'users' %} active{% endif %}" href="/{{ environment }}/users">Users</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link{% if page == 'txs' %} active{% endif %}" href="/{{ environment }}/txs">Transactions</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link{% if page == 'apps' %} active{% endif %}" href="/{{ environment }}/apps">Apps</a>
+	    </li>
+	  </ul>
+	  {% endif %}
+	  <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
+	    <li class="nav-item">
+	      <a class="nav-link{% if environment == 'dev' %} active{% endif %}" href="/dev/{{ page }}">dev</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link{% if environment == 'live' %} active{% endif %}" href="/live/{{ page }}">live</a>
+	    </li>
+	  </ul>
+	</div>
+      </nav>
       <div class="container">
 	{% block body %}
 	{% endblock %}
