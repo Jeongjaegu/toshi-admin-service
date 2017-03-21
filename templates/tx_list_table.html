@@ -1,42 +1,29 @@
-<table class="table table-hover">
-  <thead>
-    <tr>
-      <th>Hash</th>
-      <th>From</th>
-      <th>To</th>
-      <th>Value</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for tx in txs %}
-    <tr {% if not tx.last_status or tx.last_status == 'unconfirmed' %}class="table-danger"{% endif %}>
-      <td><a href="/{{ environment }}/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
-      <td>
-	{% if tx.from_user %}
-	<a href="/{{ environment }}/user/{{ tx.from_user.token_id }}">
-	  <img src="{{ tx.from_user.avatar }}" width="30" height="30">
-	  @{{ tx.from_user.username }}
-	</a>
-	{% else %}
-	<img src="https://token-id-service.herokuapp.com/identicon/{{ tx.from_address }}.png" width="30" height="30">
-	{{ tx.from_address|truncate(length=16) }}
-	{% endif %}
-      </td>
-      <td>
-	{% if tx.to_user %}
-	<a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
-	  <img src="{{ tx.to_user.avatar }}" width="30" height="30">
-	  @{{ tx.to_user.username }}
-	</a>
-	{% else %}
-	<img src="https://token-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
-	{{ tx.to_address|truncate(length=16) }}
-	{% endif %}
-      </td>
-      <td>Ξ {{ tx.value | to_eth }}</td>
-      <td>{{ tx.last_status }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% for tx in txs %}
+<tr {% if not tx.last_status or tx.last_status == 'unconfirmed' %}class="table-danger"{% endif %}>
+  <td><a href="/{{ environment }}/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
+  <td>
+    {% if tx.from_user %}
+    <a href="/{{ environment }}/user/{{ tx.from_user.token_id }}">
+      <img src="{{ tx.from_user.avatar }}" width="30" height="30">
+      @{{ tx.from_user.username }}
+    </a>
+    {% else %}
+    <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.from_address }}.png" width="30" height="30">
+    {{ tx.from_address|truncate(length=16) }}
+    {% endif %}
+  </td>
+  <td>
+    {% if tx.to_user %}
+    <a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
+      <img src="{{ tx.to_user.avatar }}" width="30" height="30">
+      @{{ tx.to_user.username }}
+    </a>
+    {% else %}
+    <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
+    {{ tx.to_address|truncate(length=16) }}
+    {% endif %}
+  </td>
+  <td>Ξ {{ tx.value | to_eth }}</td>
+  <td>{{ tx.last_status }}</td>
+</tr>
+{% endfor %}

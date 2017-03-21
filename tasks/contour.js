@@ -31,7 +31,8 @@ module.exports = {
     "webpack": {
       "entries": [
         "index",
-	"login"
+	"login",
+	"txs"
       ]
     }
   }

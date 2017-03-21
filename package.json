@@ -26,7 +26,7 @@
     "imagemin": "node tasks/imagemin",
     "clean": "node tasks/clean",
     "browserSync": "browser-sync start --config tasks/bs-config.js",
-    "dev": "npm run dev:init && parallelshell 'npm run css:watch' 'npm run templates:watch' 'npm run svg:watch' 'npm run copy:watch' 'npm run webpack' 'npm run browserSync'",
+    "dev": "npm run dev:init && parallelshell 'npm run css:watch' 'npm run svg:watch' 'npm run copy:watch' 'npm run webpack' 'npm run browserSync'",
     "dev:init": "mkdirp 'public' && npm run css && npm run svg && npm run copybootstrap && npm run copy",
     "build": "npm run build:init && npm run webpack:build && npm run rev",
     "build:init": "mkdirp 'public' && npm run clean && npm run svg && npm run css:build && npm run copybootstrap && npm run copy && npm run imagemin",

@@ -51,9 +51,26 @@
       <th>Location</th>
       <td>{{ user.location }}
     </tr>
+    <tr>
+      <th>Next Nonce</th>
+      <td>{{ tx_count | parse_int }}</td>
+    </tr>
     {% endif %}
   </tbody>
 </table>
 <h4>Recent Transactions</h4>
-{% include 'tx_list_table.html' %}
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Hash</th>
+      <th>From</th>
+      <th>To</th>
+      <th>Value</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% include 'tx_list_table.html' %}
+  </tbody>
+</table>
 {% endblock %}

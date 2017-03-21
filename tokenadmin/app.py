@@ -249,12 +249,18 @@ async def get_txs(request, conf, user):
         page = 1
     limit = 10
     offset = (page - 1) * limit
+    where_clause = ''
+    filters = [f for f in request.args.getlist('filter', []) if f in ['confirmed', 'unconfirmed', 'error']]
+    if filters:
+        where_clause = "WHERE " + " OR ".join("last_status = '{}'".format(f) for f in filters)
+        if 'unconfirmed' in filters:
+            where_clause += " OR last_status IS NULL"
     async with conf.db.eth.acquire() as con:
         rows = await con.fetch(
-            "SELECT * FROM transactions ORDER BY created DESC OFFSET $1 LIMIT $2",
+            "SELECT * FROM transactions {} ORDER BY created DESC OFFSET $1 LIMIT $2".format(where_clause),
             offset, limit)
         count = await con.fetchrow(
-            "SELECT COUNT(*) FROM transactions")
+            "SELECT COUNT(*) FROM transactions {}".format(where_clause))
     txs = []
     for row in rows:
         tx = dict(row)
@@ -264,8 +270,20 @@ async def get_txs(request, conf, user):
 
     total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
 
-    return html(await env.get_template("txs.html").render_async(txs=txs, current_user=user, environment=conf.name, page="txs",
-                                                                total=count['count'], total_pages=total_pages, current_page=page))
+    def get_qargs(page=page, filters=filters, as_list=False, as_dict=False):
+        qargs = {'page': page}
+        if filters:
+            qargs['filter'] = filters
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
+        return urlencode(qargs, True)
+
+    return html(await env.get_template("txs.html").render_async(
+        txs=txs, current_user=user, environment=conf.name, page="txs",
+        total=count['count'], total_pages=total_pages, current_page=page,
+        active_filters=filters, get_qargs=get_qargs))
 
 @app.route("/tx/<tx_hash>", prefixed=True)
 @requires_login
@@ -430,6 +448,22 @@ async def get_user(request, conf, current_user, token_id):
     if resp.status == 200:
         usr['balance'] = await resp.json()
 
+    # get last nonce
+    resp = await app.http.post(
+        conf.urls.node,
+        headers={'Content-Type': 'application/json'},
+        data=json.dumps({
+            "jsonrpc": "2.0",
+            "id": random.randint(0, 1000000),
+            "method": "eth_getTransactionCount",
+            "params": [usr['payment_address']]
+        }).encode('utf-8'))
+    data = await resp.json()
+    if 'result' in data:
+        tx_count = data['result']
+    else:
+        tx_count = -1
+
     async with conf.db.eth.acquire() as con:
         txrows = await con.fetch(
             "SELECT * FROM transactions WHERE from_address = $3 OR to_address = $3 ORDER BY created DESC OFFSET $1 LIMIT $2",
@@ -448,4 +482,4 @@ async def get_user(request, conf, current_user, token_id):
         txs.append(tx)
 
     return html(await env.get_template("user.html").render_async(
-        user=usr, txs=txs, current_user=current_user, environment=conf.name, page="users"))
+        user=usr, txs=txs, tx_count=tx_count, current_user=current_user, environment=conf.name, page="users"))

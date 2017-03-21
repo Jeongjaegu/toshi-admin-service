@@ -97,6 +97,10 @@
 	</tr>
 	{% endif %}
 	<tr>
+	  <th>nonce</th>
+	  <td>{{ node.nonce | parse_int }}</td>
+	</tr>
+	<tr>
 	  <th>gas provided</th>
 	  <td>{{ node.gas | parse_int }}</td>
 	</tr>

@@ -6,11 +6,39 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
     </ul>
-    <form class="form-inline my-2 my-lg-0">
+    <form class="form-inline my-2 my-lg-0" id="filterform" action="/{{ environment }}/txs" method="GET">
+      <label class="form-check-label">
+	<input type="checkbox" class="form-check-input" name="filter" value="confirmed"{% if 'confirmed' in active_filters %} checked{% endif %}>
+	confirmed
+      </label>
+      <label class="form-check-label">
+	<input type="checkbox" class="form-check-input" name="filter" value="unconfirmed"{% if 'unconfirmed' in active_filters %} checked{% endif %}>
+	unconfirmed
+      </label>
+      <label class="form-check-label">
+	<input type="checkbox" class="form-check-input" name="filter" value="error"{% if 'error' in active_filters %} checked{% endif %}>
+	error
+      </label>
+      {% for key, value in get_qargs(page=1,as_list=True,filters=None) %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
     </form>
   </div>
 </nav>
-{% include 'tx_list_table.html' %}
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Hash</th>
+      <th>From</th>
+      <th>To</th>
+      <th>Value</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% include 'tx_list_table.html' %}
+  </tbody>
+</table>
 <nav>
   <ul class="pagination justify-content-center">
     <li class="page-item{% if current_page == 1 %} disabled{% endif %}">
@@ -36,4 +64,7 @@
     </li>
   </ul>
 </nav>
+{% endblock %}
+{% block script %}
+  <script src="/public/txs.js"></script>
 {% endblock %}
