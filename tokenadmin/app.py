@@ -134,11 +134,11 @@ env.globals.update({'max': max, 'min': min})
 
 def to_eth(wei):
     wei = str(parse_int(wei))
-    pad = 17 - len(wei)
+    pad = 18 - len(wei)
     if pad < 0:
         eth = wei[:abs(pad)] + "." + wei[abs(pad):]
     else:
-        eth = "0." + wei.zfill(17)
+        eth = "0." + wei.zfill(18)
     while eth.endswith("0"):
         eth = eth[:-1]
     if eth.endswith("."):
