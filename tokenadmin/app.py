@@ -38,6 +38,8 @@ DEV_ID_SERVICE_DATABASE_URL = os.getenv("DEV_ID_SERVICE_DATABASE_URL")
 DEV_ID_SERVICE_URL = os.getenv("DEV_ID_SERVICE_URL")
 DEV_ETH_SERVICE_URL = os.getenv("DEV_ETH_SERVICE_URL")
 
+SERVICE_CHECK_TIMEOUT = 2
+
 class _Pools:
     def __init__(self, eth_db_pool, id_db_pool):
         self.eth = eth_db_pool
@@ -209,8 +211,83 @@ async def index(request, user):
 @app.route("/", prefixed=True)
 @requires_login
 async def liveordev(request, conf, user):
-    print(conf, user)
-    return html(await env.get_template("index.html").render_async(current_user=user, environment=conf.name, page="home"))
+
+    # get statistics
+
+    async with conf.db.eth.acquire() as con:
+        tx24h = await con.fetchrow(
+            "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '24 hours'")
+        tx7d = await con.fetchrow(
+            "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '7 days'")
+        tx1m = await con.fetchrow(
+            "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '1 month'")
+        txtotal = await con.fetchrow(
+            "SELECT COUNT(*) FROM transactions")
+        last_block = await con.fetchrow("SELECT * FROM last_blocknumber")
+
+    async with conf.db.id.acquire() as con:
+        u24h = await con.fetchrow(
+            "SELECT COUNT(*) FROM users WHERE created > (now() AT TIME ZONE 'utc') - interval '24 hours'")
+        u7d = await con.fetchrow(
+            "SELECT COUNT(*) FROM users WHERE created > (now() AT TIME ZONE 'utc') - interval '7 days'")
+        u1m = await con.fetchrow(
+            "SELECT COUNT(*) FROM users WHERE created > (now() AT TIME ZONE 'utc') - interval '1 month'")
+        utotal = await con.fetchrow(
+            "SELECT COUNT(*) FROM users")
+
+    users = {
+        'day': u24h['count'],
+        'week': u7d['count'],
+        'month': u1m['count'],
+        'total': utotal['count']
+    }
+    txs = {
+        'day': tx24h['count'],
+        'week': tx7d['count'],
+        'month': tx1m['count'],
+        'total': txtotal['count']
+    }
+
+    status = {}
+    block = {'db': last_block['blocknumber']}
+    # check service status
+    resp = await app.http.get(
+        '{}/v1/balance/0x{}'.format(conf.urls.eth, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
+    if resp.status == 200:
+        status['eth'] = "OK"
+    else:
+        status['eth'] = "Error: {}".format(resp.status)
+    resp = await app.http.get(
+        '{}/v1/user/0x{}'.format(conf.urls.id, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
+    if resp.status == 404:
+        status['id'] = "OK"
+    else:
+        status['id'] = "Error: {}".format(resp.status)
+
+    resp = await app.http.post(
+        conf.urls.node,
+        headers={'Content-Type': 'application/json'},
+        data=json.dumps({
+            "jsonrpc": "2.0",
+            "id": random.randint(0, 1000000),
+            "method": "eth_blockNumber",
+            "params": []
+        }).encode('utf-8'))
+    if resp.status == 200:
+        data = await resp.json()
+        if 'result' in data:
+            if data['result'] is not None:
+                status['node'] = "OK"
+                block['node'] = parse_int(data['result'])
+        elif 'error' in data:
+            status['node'] = data['error']
+    else:
+        status['node'] = "Error: {}".format(resp.status)
+
+
+    return html(await env.get_template("index.html").render_async(
+        current_user=user, environment=conf.name, page="home",
+        txs=txs, users=users, status=status, block=block))
 
 
 @app.get("/login")

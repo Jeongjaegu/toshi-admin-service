@@ -51,15 +51,70 @@
 	  {% endif %}
 	  <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
 	    <li class="nav-item">
-	      <a class="nav-link{% if environment == 'dev' %} active{% endif %}" href="/dev/{{ page }}">dev</a>
+	      <a class="nav-link{% if environment == 'dev' %} active{% endif %}" href="/dev{% if page != 'home' %}/{{ page }}{% endif %}">dev</a>
 	    </li>
 	    <li class="nav-item">
-	      <a class="nav-link{% if environment == 'live' %} active{% endif %}" href="/live/{{ page }}">live</a>
+	      <a class="nav-link{% if environment == 'live' %} active{% endif %}" href="/live{% if page != 'home' %}/{{ page }}{% endif %}">live</a>
 	    </li>
 	  </ul>
 	</div>
       </nav>
       {% block body %}
+	<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+	  <a class="navbar-brand" href="#">Status</a>
+	</nav>
+	<table class="table table-hover table-responsive">
+	  <thead>
+	    <tr>
+	      <th></th>
+	      <th>New (last 24 hours)</th>
+	      <th>New (last week)</th>
+	      <th>New (last month)</th>
+	      <th>Total</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <tr>
+	      <th>Users</th>
+	      <td>{{ users.day }}</td>
+	      <td>{{ users.week }}</td>
+	      <td>{{ users.month }}</td>
+	      <td>{{ users.total }}</td>
+	    </tr>
+	    <tr>
+	      <th>Transactions</th>
+	      <td>{{ txs.day }}</td>
+	      <td>{{ txs.week }}</td>
+	      <td>{{ txs.month }}</td>
+	      <td>{{ txs.total }}</td>
+	    </tr>
+	  </tbody>
+	</table>
+	<table class="table table-hover table-responsive">
+	  <thead>
+	    <tr>
+	      <th>Service</th>
+	      <th>Status</th>
+	      <th>@block number</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <tr>
+	      <th>Id service</th>
+	      <td>{{ status.id }}</td>
+	    </tr>
+	    <tr>
+	      <th>Eth service</th>
+	      <td>{{ status.eth }}</td>
+	      <td>{{ block.db }}</td>
+	    </tr>
+	    <tr>
+	      <th>Eth node</th>
+	      <td>{{ status.node }}</td>
+	      <td>{{ block.node }}</td>
+	    </tr>
+	  </tbody>
+	</table>
       {% endblock %}
       <script src="/public/jquery.min.js"></script>
       <script src="/public/tether.min.js"></script>
