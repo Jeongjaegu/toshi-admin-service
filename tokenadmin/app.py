@@ -29,33 +29,45 @@ ID_SERVICE_LOGIN_URL = os.getenv("ID_SERVICE_LOGIN_URL")
 LIVE_ETHEREUM_NODE_URL = os.getenv("LIVE_ETHEREUM_NODE_URL")
 LIVE_ETH_SERVICE_DATABASE_URL = os.getenv("LIVE_ETH_SERVICE_DATABASE_URL")
 LIVE_ID_SERVICE_DATABASE_URL = os.getenv("LIVE_ID_SERVICE_DATABASE_URL")
+LIVE_DIR_SERVICE_DATABASE_URL = os.getenv("LIVE_DIR_SERVICE_DATABASE_URL")
+LIVE_REP_SERVICE_DATABASE_URL = os.getenv("LIVE_REP_SERVICE_DATABASE_URL")
 LIVE_ID_SERVICE_URL = os.getenv("LIVE_ID_SERVICE_URL")
 LIVE_ETH_SERVICE_URL = os.getenv("LIVE_ETH_SERVICE_URL")
+LIVE_DIR_SERVICE_URL = os.getenv("LIVE_DIR_SERVICE_URL")
+LIVE_REP_SERVICE_URL = os.getenv("LIVE_REP_SERVICE_URL")
 
 DEV_ETHEREUM_NODE_URL = os.getenv("DEV_ETHEREUM_NODE_URL")
 DEV_ETH_SERVICE_DATABASE_URL = os.getenv("DEV_ETH_SERVICE_DATABASE_URL")
 DEV_ID_SERVICE_DATABASE_URL = os.getenv("DEV_ID_SERVICE_DATABASE_URL")
+DEV_DIR_SERVICE_DATABASE_URL = os.getenv("DEV_DIR_SERVICE_DATABASE_URL")
+DEV_REP_SERVICE_DATABASE_URL = os.getenv("DEV_REP_SERVICE_DATABASE_URL")
 DEV_ID_SERVICE_URL = os.getenv("DEV_ID_SERVICE_URL")
 DEV_ETH_SERVICE_URL = os.getenv("DEV_ETH_SERVICE_URL")
+DEV_DIR_SERVICE_URL = os.getenv("DEV_DIR_SERVICE_URL")
+DEV_REP_SERVICE_URL = os.getenv("DEV_REP_SERVICE_URL")
 
 SERVICE_CHECK_TIMEOUT = 2
 
 class _Pools:
-    def __init__(self, eth_db_pool, id_db_pool):
+    def __init__(self, eth_db_pool, id_db_pool, dir_db_pool, rep_db_pool):
         self.eth = eth_db_pool
         self.id = id_db_pool
+        self.dir = dir_db_pool
+        self.rep = rep_db_pool
 
 class _Urls:
-    def __init__(self, node_url, id_service_url, eth_service_url):
+    def __init__(self, node_url, id_service_url, eth_service_url, dir_service_url, rep_service_url):
         self.node = node_url
         self.id = id_service_url
         self.eth = eth_service_url
+        self.dir = dir_service_url
+        self.rep = rep_service_url
 
 class Config:
-    def __init__(self, name, eth_db_pool, id_db_pool, node_url, id_service_url, eth_service_url):
+    def __init__(self, name, eth_db_pool, id_db_pool, dir_db_pool, rep_db_pool, node_url, id_service_url, eth_service_url, dir_service_url, rep_service_url):
         self.name = name
-        self.db = _Pools(eth_db_pool, id_db_pool)
-        self.urls = _Urls(node_url, id_service_url, eth_service_url)
+        self.db = _Pools(eth_db_pool, id_db_pool, dir_db_pool, rep_db_pool)
+        self.urls = _Urls(node_url, id_service_url, eth_service_url, dir_service_url, rep_service_url)
 
 def add_config(fn):
     async def wrapper(request, *args, **kwargs):
@@ -75,22 +87,30 @@ class App(Sanic):
         async def prepare_db(app, loop):
             app.configs = {}
 
-            app.pool = adminpool = await prepare_database({'dsn': ADMIN_SERVICE_DATABASE_URL})
+            app.pool = await prepare_database({'dsn': ADMIN_SERVICE_DATABASE_URL})
             # live
             live_eth = await create_pool(LIVE_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
             live_id = await create_pool(LIVE_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            app.configs['live'] = Config("live", live_eth, live_id,
+            live_dir = await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+            live_rep = await create_pool(LIVE_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+            app.configs['live'] = Config("live", live_eth, live_id, live_dir, live_rep,
                                          LIVE_ETHEREUM_NODE_URL,
                                          LIVE_ID_SERVICE_URL,
-                                         LIVE_ETH_SERVICE_URL)
+                                         LIVE_ETH_SERVICE_URL,
+                                         LIVE_DIR_SERVICE_URL,
+                                         LIVE_REP_SERVICE_URL)
 
             # dev
             dev_eth = await create_pool(DEV_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
             dev_id = await create_pool(DEV_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            app.configs['dev'] = Config("dev", dev_eth, dev_id,
+            dev_dir = await create_pool(DEV_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+            dev_rep = await create_pool(DEV_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+            app.configs['dev'] = Config("dev", dev_eth, dev_id, dev_dir, dev_rep,
                                         DEV_ETHEREUM_NODE_URL,
                                         DEV_ID_SERVICE_URL,
-                                        DEV_ETH_SERVICE_URL)
+                                        DEV_ETH_SERVICE_URL,
+                                        DEV_DIR_SERVICE_URL,
+                                        DEV_REP_SERVICE_URL)
 
             # configure http client
             app.http = aiohttp.ClientSession()
@@ -151,13 +171,13 @@ env.filters['to_eth'] = to_eth
 app.static('/public', './public')
 app.static('/favicon.ico', './public/favicon.ico')
 
-def fix_avatar_for_user(id_service_url, user):
-    if not user['avatar']:
-        user['avatar'] = "{}/identicon/{}.png".format(id_service_url, user['token_id'])
-    elif user['avatar'].startswith('/'):
-        user['avatar'] = "{}{}".format(
-        id_service_url,
-            user['avatar'])
+def fix_avatar_for_user(id_service_url, user, key='avatar'):
+    if not user[key]:
+        user[key] = "{}/identicon/{}.png".format(id_service_url, user['token_id'])
+    elif user[key].startswith('/'):
+        user[key] = "{}{}".format(
+            id_service_url,
+            user[key])
     return user
 
 async def get_token_user_from_payment_address(conf, address):
@@ -251,19 +271,35 @@ async def liveordev(request, conf, user):
     status = {}
     block = {'db': last_block['blocknumber']}
     # check service status
+    # eth
     resp = await app.http.get(
         '{}/v1/balance/0x{}'.format(conf.urls.eth, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
     if resp.status == 200:
         status['eth'] = "OK"
     else:
         status['eth'] = "Error: {}".format(resp.status)
+    # id
     resp = await app.http.get(
         '{}/v1/user/0x{}'.format(conf.urls.id, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
     if resp.status == 404:
         status['id'] = "OK"
     else:
         status['id'] = "Error: {}".format(resp.status)
-
+    # dir
+    resp = await app.http.get(
+        '{}/v1/apps/'.format(conf.urls.dir), timeout=SERVICE_CHECK_TIMEOUT)
+    if resp.status == 200:
+        status['dir'] = "OK"
+    else:
+        status['dir'] = "Error: {}".format(resp.status)
+    # rep
+    resp = await app.http.get(
+        '{}/v1/timestamp'.format(conf.urls.rep), timeout=SERVICE_CHECK_TIMEOUT)
+    if resp.status == 200:
+        status['rep'] = "OK"
+    else:
+        status['rep'] = "Error: {}".format(resp.status)
+    # node
     resp = await app.http.post(
         conf.urls.node,
         headers={'Content-Type': 'application/json'},
@@ -434,6 +470,7 @@ async def get_users(request, conf, current_user):
     offset = (page - 1) * limit
     order_by = request.args.get('order_by', None)
     search_query = request.args.get('query', None)
+    filter_by = request.args.get('filter', None)
     order = ('created', 'DESC')
     if order_by:
         if order_by in sortable_user_columns:
@@ -441,9 +478,8 @@ async def get_users(request, conf, current_user):
                 order = (order_by[1:], 'ASC' if order_by[1:] in negative_user_columns else 'DESC')
             else:
                 order = (order_by, 'DESC' if order_by in negative_user_columns else 'ASC')
-    where_clause = ''
+
     if search_query:
-        apps = None
         # strip punctuation
         query = ''.join([c for c in search_query if c not in string.punctuation])
         # split words and add in partial matching flags
@@ -459,24 +495,25 @@ async def get_users(request, conf, current_user):
                "WHERE (tsv @@ q){}) AS t1 "
                "{} "
                "OFFSET $1 LIMIT $2"
-               .format(" AND is_app = $4" if apps is not None else "", query_order))
+               .format(" AND is_app = $4" if filter_by == 'is_app' else "", query_order))
         count_args = [query]
         count_sql = ("SELECT COUNT(*) FROM users, TO_TSQUERY($1) AS q "
                      "WHERE (tsv @@ q){}"
-                     .format(" AND is_app = $2" if apps is not None else ""))
-        if apps is not None:
-            args.append(apps)
-            count_args.append(apps)
+                     .format(" AND is_app = $2" if filter_by == 'is_app' is not None else ""))
+        if filter_by == 'is_app':
+            args.append(True)
+            count_args.append(True)
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(sql, *args)
             count = await con.fetchrow(count_sql, *count_args)
     else:
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(
-                "SELECT * FROM users ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+                "SELECT * FROM users {} ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(
+                    "WHERE is_app = true" if filter_by == 'is_app' else "", *order),
                 offset, limit)
             count = await con.fetchrow(
-                "SELECT COUNT(*) FROM users".format(where_clause))
+                "SELECT COUNT(*) FROM users {}".format("WHERE is_app = true" if filter_by == 'is_app' else ""))
     users = []
     for row in rows:
         usr = fix_avatar_for_user(conf.urls.id, dict(row))
@@ -489,7 +526,7 @@ async def get_users(request, conf, current_user):
 
     total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
 
-    def get_qargs(page=page, order_by=order_by, query=search_query, as_list=False, as_dict=False):
+    def get_qargs(page=page, order_by=order_by, query=search_query, filter=filter_by, as_list=False, as_dict=False):
         qargs = {'page': page}
         if order_by:
             if order_by[0] == '+':
@@ -501,6 +538,8 @@ async def get_users(request, conf, current_user):
             qargs['order_by'] = order_by
         if query:
             qargs['query'] = query
+        if filter:
+            qargs['filter'] = filter
         if as_dict:
             return qargs
         if as_list:
@@ -518,12 +557,19 @@ async def get_user(request, conf, current_user, token_id):
         row = await con.fetchrow(
             "SELECT * FROM users WHERE token_id = $1", token_id)
     if not row:
-        return html(await env.get_template("user.html").render_async(current_user=current_user))
+        return html(await env.get_template("user.html").render_async(current_user=current_user, environment=conf.name, page="users"))
     usr = fix_avatar_for_user(conf.urls.id, dict(row))
     url = '{}/v1/balance/{}'.format(conf.urls.eth, usr['payment_address'])
     resp = await app.http.get(url)
     if resp.status == 200:
         usr['balance'] = await resp.json()
+    if usr['is_app']:
+        async with conf.db.dir.acquire() as con:
+            row = await con.fetchrow(
+                "SELECT * FROM apps JOIN sofa_manifests ON apps.token_id = sofa_manifests.token_id WHERE apps.token_id = $1",
+                token_id)
+        if row:
+            usr['app'] = row
 
     # get last nonce
     resp = await app.http.post(
@@ -560,3 +606,211 @@ async def get_user(request, conf, current_user, token_id):
 
     return html(await env.get_template("user.html").render_async(
         user=usr, txs=txs, tx_count=tx_count, current_user=current_user, environment=conf.name, page="users"))
+
+sortable_apps_columns = ['created', 'name', 'reputation_score', 'featured']
+sortable_apps_columns.extend(['-{}'.format(col) for col in sortable_user_columns])
+# specify which columns should be sorted in descending order by default
+negative_apps_columns = ['created', 'reputation_score', 'featured']
+
+@app.route("/apps", prefixed=True)
+@requires_login
+async def get_apps(request, conf, current_user):
+    page = parse_int(request.args.get('page', None)) or 1
+    if page < 1:
+        page = 1
+    limit = 10
+    offset = (page - 1) * limit
+    order_by = request.args.get('order_by', None)
+    search_query = request.args.get('query', None)
+    filter_by = request.args.get('filter', None)
+    order = ('created', 'DESC')
+    if order_by:
+        if order_by in sortable_apps_columns:
+            if order_by[0] == '-':
+                order = (order_by[1:], 'ASC' if order_by[1:] in negative_apps_columns else 'DESC')
+            else:
+                order = (order_by, 'DESC' if order_by in negative_apps_columns else 'ASC')
+
+    if search_query:
+        query = '%' + search_query + '%'
+        args = [offset, limit, query]
+        if order_by:
+            query_order = "ORDER BY apps.{} {}".format(*order)
+        else:
+            # default order by rank
+            query_order = "ORDER BY apps.updated"
+        sql = ("SELECT * FROM apps "
+               "JOIN sofa_manifests ON apps.token_id = sofa_manifests.token_id "
+               "WHERE apps.name ilike $3 "
+               "{} "
+               "OFFSET $1 LIMIT $2"
+               .format(query_order))
+        count_args = [query]
+        count_sql = ("SELECT COUNT(*) FROM apps "
+                     "WHERE apps.name ilike $1")
+        async with conf.db.dir.acquire() as con:
+            print(sql, args)
+            rows = await con.fetch(sql, *args)
+            count = await con.fetchrow(count_sql, *count_args)
+    else:
+        async with conf.db.dir.acquire() as con:
+            rows = await con.fetch(
+                "SELECT * FROM apps JOIN sofa_manifests ON apps.token_id = sofa_manifests.token_id "
+                "ORDER BY apps.{} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+                offset, limit)
+            count = await con.fetchrow(
+                "SELECT COUNT(*) FROM apps")
+    apps = []
+    for row in rows:
+        app = fix_avatar_for_user(conf.urls.id, dict(row), 'avatar_url')
+        apps.append(app)
+
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
+
+    def get_qargs(page=page, order_by=order_by, query=search_query, filter=filter_by, as_list=False, as_dict=False):
+        qargs = {'page': page}
+        if order_by:
+            if order_by[0] == '+':
+                order_by = order_by[1:]
+            elif order_by[0] != '-':
+                # toggle sort order
+                if order[0] == order_by and order[1] == ('DESC' if order_by in negative_user_columns else 'ASC'):
+                    order_by = '-{}'.format(order_by)
+            qargs['order_by'] = order_by
+        if query:
+            qargs['query'] = query
+        if filter:
+            qargs['filter'] = filter
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
+        return urlencode(qargs)
+
+    return html(await env.get_template("apps.html").render_async(
+        apps=apps, current_user=current_user, environment=conf.name, page="apps",
+        total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
+
+@app.route("/app/add", prefixed=True)
+@requires_login
+async def add_app_handler_get(request, conf, current_user):
+    token_id = request.args.get('token_id', None)
+    name = request.args.get('name', None)
+    avatar_url = None
+    if token_id:
+        url = '{}/v1/user/{}'.format(conf.urls.id, token_id)
+        resp = await app.http.get(url)
+        if resp.status == 200:
+            data = await resp.json()
+            avatar_url = data['avatar']
+        else:
+            avatar_url = "{}/identicon/{}.png".format(conf.urls.id, token_id)
+
+    return html(await env.get_template("add_app.html").render_async(
+        token_id=token_id, name=name, avatar_url=avatar_url,
+        current_user=current_user, environment=conf.name, page="apps"))
+
+@app.route("/app/add", prefixed=True, methods=["POST"])
+@requires_login
+async def add_app_handler_post(request, conf, current_user):
+    token_id = request.form.get('token_id')
+    name = request.form.get('name')
+    avatar_url = request.form.get('avatar_url')
+    description = request.form.get('description')
+    #manifest = request.args.get('manifest')
+    featured = request.form.get('featured', False)
+    if featured is not False:
+        featured = True
+
+    context = {
+        'current_user': current_user, 'environment': conf.name, 'page': 'apps',
+        'token_id': token_id,
+        'name': name,
+        'avatar_url': avatar_url,
+        'description': description,
+        'featured': featured
+    }
+
+    if token_id is None or name is None or avatar_url is None or description is None: # or manifest is None:
+        context['error'] = True
+        return html(await env.get_template("add_app.html").render_async(**context))
+    else:
+        # make sure the token id exists
+        url = '{}/v1/user/{}'.format(conf.urls.id, token_id)
+        resp = await app.http.get(url)
+        if resp.status != 200:
+            context['error'] = True
+            return html(await env.get_template("add_app.html").render_async(**context))
+        else:
+            data = await resp.json()
+
+            # TODO: parse given manifest to get these
+            init_request = ['paymentAddress', 'language']
+            languages = ['en']
+            interfaces = ['ChatBot']
+            protocol = 'sofa-v1.0'
+
+            payment_address = data['payment_address']
+            username = data['username']
+
+            # make sure the id service has this user marked as an app
+            if data['is_app'] is False:
+                async with conf.db.id.acquire() as con:
+                    await con.execute("UPDATE users SET is_app = true WHERE token_id = $1", token_id)
+            # save the new app
+            async with conf.db.dir.acquire() as con:
+                await con.execute(
+                    "INSERT INTO apps (token_id, name, description, reputation_score, review_count, featured) "
+                    "VALUES ($1, $2, $3, $4, $5, $6) "
+                    "ON CONFLICT (token_id) DO UPDATE "
+                    "SET name = EXCLUDED.name, description = EXCLUDED.description, "
+                    "reputation_score = EXCLUDED.reputation_score, review_count = EXCLUDED.review_count, "
+                    "featured = EXCLUDED.featured, "
+                    "updated = (now() AT TIME ZONE 'utc')",
+                    token_id, name, description, data['reputation_score'], data['review_count'], featured)
+                await con.execute(
+                    "INSERT INTO sofa_manifests "
+                    "(token_id, payment_address, username, init_request, languages, interfaces, protocol, avatar_url) "
+                    "VALUES ($1, $2, $3, $4, $5, $6, $7, $8) "
+                    "ON CONFLICT (token_id) DO UPDATE "
+                    "SET payment_address = EXCLUDED.payment_address, username = EXCLUDED.username, "
+                    "init_request = EXCLUDED.init_request, languages = EXCLUDED.languages, "
+                    "interfaces = EXCLUDED.interfaces, protocol = EXCLUDED.protocol, avatar_url = EXCLUDED.avatar_url",
+                    token_id, payment_address, username, init_request, languages, interfaces, protocol, avatar_url)
+                await con.execute(
+                    "INSERT INTO submissions "
+                    "(app_token_id, submitter_token_id) "
+                    "VALUES "
+                    "($1, $2) "
+                    "ON CONFLICT (app_token_id, submitter_token_id) DO NOTHING",
+                    token_id, token_id)
+            return redirect("/{}/user/{}".format(conf.name, token_id))
+
+@app.route("/app/featured", prefixed=True, methods=["POST"])
+@requires_login
+async def feature_app_handler_post(request, conf, current_user):
+    print(request.form)
+    token_id = request.form.get('token_id')
+    featured = request.form.get('featured', False)
+    if token_id is not None:
+        async with conf.db.dir.acquire() as con:
+            await con.execute("UPDATE apps SET featured = $2 WHERE token_id = $1", token_id, True if featured else False)
+        if 'Referer' in request.headers:
+            return redirect(request.headers['Referer'])
+        return redirect("/{}/user/{}".format(conf.name, token_id))
+    return redirect("/{}/apps".format(conf.name))
+
+@app.route("/app/remove", prefixed=True, methods=["POST"])
+@requires_login
+async def remove_app_handler_post(request, conf, current_user):
+    token_id = request.form.get('token_id')
+    if token_id is not None:
+        async with conf.db.dir.acquire() as con:
+            async with con.transaction():
+                await con.execute("DELETE FROM submissions WHERE app_token_id = $1", token_id)
+                await con.execute("DELETE FROM sofa_manifests WHERE token_id = $1", token_id)
+                await con.execute("DELETE FROM apps WHERE token_id = $1", token_id)
+        if 'Referer' in request.headers:
+            return redirect(request.headers['Referer'])
+        return redirect("/{}/user/{}".format(conf.name, token_id))
+    return redirect("/{}/apps".format(conf.name))

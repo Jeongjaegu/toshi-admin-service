@@ -6,9 +6,13 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
     </ul>
-    <form class="form-inline my-2 my-lg-0" action="/{{ environment }}/users" method="GET">
+    <form class="form-inline my-2 my-lg-0" id="filterform" action="/{{ environment }}/users" method="GET">
+      <label class="form-check-label">
+	<input type="checkbox" class="form-check-input" name="filter" value="is_app"{% if get_qargs(as_dict=True)['filter'] %} checked{% endif %}>
+	apps only
+      </label>
       <input class="form-control mr-sm-2" name="query" type="text" placeholder="Search" value="{{ get_qargs(as_dict=True)['query'] }}">
-      {% for key, value in get_qargs(page=1,as_list=True,query=None,order_by=None) %}
+      {% for key, value in get_qargs(page=1,as_list=True,query=None,order_by=None,filter=None) %}
       <input type="hidden" name="{{ key }}" value="{{ value }}">
       {% endfor %}
       <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
@@ -23,6 +27,7 @@
       <th>Balance</th>
       <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='reputation_score') }}">Reputation</a></th>
+      <th>Is Bot</th>
       <th><a class="" href="?{{ get_qargs(order_by='location') }}">Location</a></th>
     </tr>
   </thead>
@@ -67,6 +72,11 @@
 	 ({{ user.review_count }})
       </td>
       <td>
+	{% if user.is_app %}
+	  t
+	{% endif %}
+      </td>
+      <td>
 	{{ user.location if user.location else '' }}
       </td>
     </tr>
@@ -98,4 +108,7 @@
     </li>
   </ul>
 </nav>
+{% endblock %}
+{% block script %}
+  <script src="/public/txs.js"></script>
 {% endblock %}

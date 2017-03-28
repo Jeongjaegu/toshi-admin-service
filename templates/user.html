@@ -1,63 +1,140 @@
 {% extends "index.html" %}
 {% block body %}
-<h4><img src="{{ user.avatar }}" width="30" height="30">{{ user.token_id }}</h4>
-<table class="table table-hover table-responsive">
-  <tbody>
-    <tr>
-      <th>Userame</th>
-      <td>@{{ user.username }}</td>
-    </tr>
-    <tr>
-      <th>Reputation</th>
-      <td>
-	{% if user.reputation_score %}
-	{% if user.reputation_score < 1 %}☆{% endif %}
-	{% if user.reputation_score >= 1 %}★{% endif %}
-	{% if user.reputation_score >= 2 %}★{% endif %}
-	{% if user.reputation_score >= 3 %}★{% endif %}
-	{% if user.reputation_score >= 4 %}★{% endif %}
-        {% if user.reputation_score >= 5 %}★{% endif %}
-        {% else %}
-	—
-	{% endif %}
-	 ({{ user.review_count }})
-      </td>
-    </tr>
-    {% if user.name %}
-    <tr>
-      <th>Name</th>
-      <td>{{ user.name }}</td>
-    </tr>
-    {% endif %}
-    <tr>
-      <th>Payment Address</th>
-      <td>{{ user.payment_address }}</td>
-    </tr>
-    <tr>
-      <th>Balance</th>
-      <td>
-	{% if user.balance %}
-      	Ξ {{ user.balance.confirmed_balance | to_eth }}
-	{% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
-	(Ξ {{ user.balance.unconfirmed_balance | to_eth }})
-	{% endif %}
-	{% else %}
-	<span class="badge badge-warning">unknown</span>
-	{% endif %}
-      </td>
-    </tr>
-    {% if user.location %}
-    <tr>
-      <th>Location</th>
-      <td>{{ user.location }}
-    </tr>
-    <tr>
-      <th>Next Nonce</th>
-      <td>{{ tx_count | parse_int }}</td>
-    </tr>
-    {% endif %}
-  </tbody>
-</table>
+{% if user %}
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#"><img src="{{ user.avatar }}" width="30" height="30"></a>
+  <a class="navbar-brand" href="#">{{ user.token_id }}</a>
+</nav>
+<div class="container-fluid">
+  <div class="row">
+  <div class="col">
+    <table class="table table-hover table-responsive">
+      <tbody>
+        <tr>
+          <th>Userame</th>
+          <td>@{{ user.username }}</td>
+        </tr>
+        <tr>
+          <th>Reputation</th>
+          <td>
+            {% if user.reputation_score %}
+              {% if user.reputation_score < 1 %}☆{% endif %}
+              {% if user.reputation_score >= 1 %}★{% endif %}
+              {% if user.reputation_score >= 2 %}★{% endif %}
+              {% if user.reputation_score >= 3 %}★{% endif %}
+              {% if user.reputation_score >= 4 %}★{% endif %}
+              {% if user.reputation_score >= 5 %}★{% endif %}
+            {% else %}
+              —
+            {% endif %}
+            ({{ user.review_count }})
+          </td>
+        </tr>
+        {% if user.name %}
+          <tr>
+            <th>Name</th>
+            <td>{{ user.name }}</td>
+          </tr>
+        {% endif %}
+        <tr>
+          <th>Payment Address</th>
+          <td>{{ user.payment_address }}</td>
+        </tr>
+        <tr>
+          <th>Balance</th>
+          <td>
+            {% if user.balance %}
+              Ξ {{ user.balance.confirmed_balance | to_eth }}
+              {% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
+                (Ξ {{ user.balance.unconfirmed_balance | to_eth }})
+              {% endif %}
+            {% else %}
+              <span class="badge badge-warning">unknown</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% if user.location %}
+          <tr>
+            <th>Location</th>
+            <td>{{ user.location }}
+          </tr>
+        {% endif %}
+        <tr>
+          <th>Next Nonce</th>
+          <td>{{ tx_count | parse_int }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% if user.is_app %}
+    <div class="col">
+      <table class="table table-hover table-responsive">
+        <tbody>
+          <tr>
+            <th>App Details</th>
+          </tr>
+          <tr>
+            <th>
+              {% if not user.app %}
+                Not
+              {% endif %}
+              In Directory Service
+            </th>
+            {% if user.app %}
+              <td>
+                <form id="remove_from_dir_form" method="POST" action="/{{ environment }}/app/remove">
+                  <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                </form>
+                <a href="#" id="remove_from_dir">(remove)</a></td>
+            {% else %}
+              <td><a href="/{{ environment }}/app/add?token_id={{ user.token_id }}&name={{ user.name if user.name else user.username | urlencode }}">(add)</a></td>
+            {% endif %}
+          </tr>
+          {% if user.app %}
+            <tr>
+              <th>
+                {% if not user.app.featured %}
+                  Not
+                {% endif %}
+                Featured
+              </th>
+              {% if user.app.featured %}
+                <td>
+                  <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                    <input type="hidden" name="featured" value="">
+                  </form>
+                  <a href="#" class="remove_featured">(unfeature)</a></td>
+                </td>
+              {% else %}
+                <td>
+                  <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                    <input type="hidden" name="featured" value="true">
+                  </form>
+                  <a href="#" class="set_featured">(feature)</a></td>
+                </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <th>App Name</th>
+              <td>{{ user.app.name }}</td>
+            </tr>
+            <tr>
+            <th>Description</th>
+              <td>{{ user.app.description }}</td>
+            </tr>
+            <tr>
+              <th>App Icon</th>
+              <td><img src="{{ user.app.avatar_url }}" width="30" height="30"></td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+  </div>
+</div>
 <h4>Recent Transactions</h4>
 <table class="table table-hover">
   <thead>
@@ -73,4 +150,9 @@
     {% include 'tx_list_table.html' %}
   </tbody>
 </table>
+{% else %}
+  <div class="alert alert-danger" role="alert">
+    <strong>Oh snap!</strong> user not found!
+  </div>
+{% endif %}
 {% endblock %}
