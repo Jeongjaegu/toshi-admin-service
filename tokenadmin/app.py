@@ -272,54 +272,68 @@ async def liveordev(request, conf, user):
     block = {'db': last_block['blocknumber']}
     # check service status
     # eth
-    resp = await app.http.get(
-        '{}/v1/balance/0x{}'.format(conf.urls.eth, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
-    if resp.status == 200:
-        status['eth'] = "OK"
-    else:
-        status['eth'] = "Error: {}".format(resp.status)
+    try:
+        resp = await app.http.get(
+            '{}/v1/balance/0x{}'.format(conf.urls.eth, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
+        if resp.status == 200:
+            status['eth'] = "OK"
+        else:
+            status['eth'] = "Error: {}".format(resp.status)
+    except asyncio.TimeoutError:
+        status['eth'] = "Error: timeout"
     # id
-    resp = await app.http.get(
-        '{}/v1/user/0x{}'.format(conf.urls.id, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
-    if resp.status == 404:
-        status['id'] = "OK"
-    else:
-        status['id'] = "Error: {}".format(resp.status)
+    try:
+        resp = await app.http.get(
+            '{}/v1/user/0x{}'.format(conf.urls.id, '0' * 40), timeout=SERVICE_CHECK_TIMEOUT)
+        if resp.status == 404:
+            status['id'] = "OK"
+        else:
+            status['id'] = "Error: {}".format(resp.status)
+    except asyncio.TimeoutError:
+        status['id'] = "Error: timeout"
     # dir
-    resp = await app.http.get(
-        '{}/v1/apps/'.format(conf.urls.dir), timeout=SERVICE_CHECK_TIMEOUT)
-    if resp.status == 200:
-        status['dir'] = "OK"
-    else:
-        status['dir'] = "Error: {}".format(resp.status)
+    try:
+        resp = await app.http.get(
+            '{}/v1/apps/'.format(conf.urls.dir), timeout=SERVICE_CHECK_TIMEOUT)
+        if resp.status == 200:
+            status['dir'] = "OK"
+        else:
+            status['dir'] = "Error: {}".format(resp.status)
+    except asyncio.TimeoutError:
+        status['dir'] = "Error: timeout"
     # rep
-    resp = await app.http.get(
-        '{}/v1/timestamp'.format(conf.urls.rep), timeout=SERVICE_CHECK_TIMEOUT)
-    if resp.status == 200:
-        status['rep'] = "OK"
-    else:
-        status['rep'] = "Error: {}".format(resp.status)
+    try:
+        resp = await app.http.get(
+            '{}/v1/timestamp'.format(conf.urls.rep), timeout=SERVICE_CHECK_TIMEOUT)
+        if resp.status == 200:
+            status['rep'] = "OK"
+        else:
+            status['rep'] = "Error: {}".format(resp.status)
+    except asyncio.TimeoutError:
+        status['rep'] = "Error: timeout"
     # node
-    resp = await app.http.post(
-        conf.urls.node,
-        headers={'Content-Type': 'application/json'},
-        data=json.dumps({
-            "jsonrpc": "2.0",
-            "id": random.randint(0, 1000000),
-            "method": "eth_blockNumber",
-            "params": []
-        }).encode('utf-8'))
-    if resp.status == 200:
-        data = await resp.json()
-        if 'result' in data:
-            if data['result'] is not None:
-                status['node'] = "OK"
-                block['node'] = parse_int(data['result'])
-        elif 'error' in data:
-            status['node'] = data['error']
-    else:
-        status['node'] = "Error: {}".format(resp.status)
-
+    try:
+        resp = await app.http.post(
+            conf.urls.node,
+            headers={'Content-Type': 'application/json'},
+            data=json.dumps({
+                "jsonrpc": "2.0",
+                "id": random.randint(0, 1000000),
+                "method": "eth_blockNumber",
+                "params": []
+            }).encode('utf-8'))
+        if resp.status == 200:
+            data = await resp.json()
+            if 'result' in data:
+                if data['result'] is not None:
+                    status['node'] = "OK"
+                    block['node'] = parse_int(data['result'])
+            elif 'error' in data:
+                status['node'] = data['error']
+        else:
+            status['node'] = "Error: {}".format(resp.status)
+    except asyncio.TimeoutError:
+        status['node'] = "Error: timeout"
 
     return html(await env.get_template("index.html").render_async(
         current_user=user, environment=conf.name, page="home",
