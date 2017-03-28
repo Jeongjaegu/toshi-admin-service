@@ -154,13 +154,13 @@ env = Environment(enable_async=True, loader=FileSystemLoader('templates'))
 env.filters['parse_int'] = parse_int
 env.globals.update({'max': max, 'min': min})
 
-def to_eth(wei):
+def to_eth(wei, points=18):
     wei = str(parse_int(wei))
     pad = 18 - len(wei)
     if pad < 0:
-        eth = wei[:abs(pad)] + "." + wei[abs(pad):]
+        eth = wei[:abs(pad)] + "." + wei[abs(pad):abs(pad)+points]
     else:
-        eth = "0." + wei.zfill(18)
+        eth = "0." + wei.zfill(18)[:points]
     while eth.endswith("0"):
         eth = eth[:-1]
     if eth.endswith("."):

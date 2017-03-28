@@ -47,9 +47,9 @@
       </td>
       <td>
 	{% if user.balance %}
-	Ξ {{ user.balance.confirmed_balance | to_eth }}
+	Ξ {{ user.balance.confirmed_balance | to_eth(4) }}
 	{% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
-	(Ξ {{ user.balance.unconfirmed_balance | to_eth }})
+	(Ξ {{ user.balance.unconfirmed_balance | to_eth(4) }})
 	{% endif %}
 	{% else %}
 	<span class="badge badge-warning">unknown</span>
