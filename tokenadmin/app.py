@@ -619,8 +619,44 @@ async def get_user(request, conf, current_user, token_id):
             tx['to_user'] = usr
         txs.append(tx)
 
+    async with conf.db.rep.acquire() as con:
+        reviews_given_rows = await con.fetch(
+            "SELECT * FROM reviews WHERE reviewer_address = $1", token_id)
+        reviews_recieved_rows = await con.fetch(
+            "SELECT * FROM reviews WHERE reviewee_address = $1", token_id)
+    reviews_given = []
+    reviews_recieved = []
+    for review in reviews_given_rows:
+        async with conf.db.id.acquire() as con:
+            reviewee = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewee_address'])
+        if reviewee:
+            reviewee = fix_avatar_for_user(conf.urls.id, dict(reviewee))
+        else:
+            reviewee = fix_avatar_for_user(conf.urls.id, {'token_id': review['reviewee_address']})
+        reviews_given.append({
+            'reviewee': reviewee,
+            'rating': review['rating'],
+            'review': review['review'],
+            'created': review['created']
+        })
+    for review in reviews_recieved_rows:
+        async with conf.db.id.acquire() as con:
+            reviewer = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewer_address'])
+        if reviewer:
+            reviewer = fix_avatar_for_user(conf.urls.id, dict(reviewer))
+        else:
+            reviewer = fix_avatar_for_user(conf.urls.id, {'token_id': review['reviewer_address']})
+        reviews_recieved.append({
+            'reviewer': reviewer,
+            'rating': review['rating'],
+            'review': review['review'],
+            'created': review['created']
+        })
+
     return html(await env.get_template("user.html").render_async(
-        user=usr, txs=txs, tx_count=tx_count, current_user=current_user, environment=conf.name, page="users"))
+        user=usr, txs=txs, tx_count=tx_count,
+        reviews_given=reviews_given, reviews_recieved=reviews_recieved,
+        current_user=current_user, environment=conf.name, page="users"))
 
 sortable_apps_columns = ['created', 'name', 'reputation_score', 'featured']
 sortable_apps_columns.extend(['-{}'.format(col) for col in sortable_user_columns])

@@ -7,121 +7,121 @@
 </nav>
 <div class="container-fluid">
   <div class="row">
-  <div class="col">
-    <table class="table table-hover table-responsive">
-      <tbody>
-        <tr>
-          <th>Userame</th>
-          <td>@{{ user.username }}</td>
-        </tr>
-        <tr>
-          <th>Reputation</th>
-          <td>
-            {% if user.reputation_score %}
-              {% if user.reputation_score < 1 %}☆{% endif %}
-              {% if user.reputation_score >= 1 %}★{% endif %}
-              {% if user.reputation_score >= 2 %}★{% endif %}
-              {% if user.reputation_score >= 3 %}★{% endif %}
-              {% if user.reputation_score >= 4 %}★{% endif %}
-              {% if user.reputation_score >= 5 %}★{% endif %}
-            {% else %}
-              —
-            {% endif %}
-            ({{ user.review_count }})
-          </td>
-        </tr>
-        {% if user.name %}
-          <tr>
-            <th>Name</th>
-            <td>{{ user.name }}</td>
-          </tr>
-        {% endif %}
-        <tr>
-          <th>Payment Address</th>
-          <td>{{ user.payment_address }}</td>
-        </tr>
-        <tr>
-          <th>Balance</th>
-          <td>
-            {% if user.balance %}
-              Ξ {{ user.balance.confirmed_balance | to_eth }}
-              {% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
-                (Ξ {{ user.balance.unconfirmed_balance | to_eth }})
-              {% endif %}
-            {% else %}
-              <span class="badge badge-warning">unknown</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% if user.location %}
-          <tr>
-            <th>Location</th>
-            <td>{{ user.location }}
-          </tr>
-        {% endif %}
-        <tr>
-          <th>Next Nonce</th>
-          <td>{{ tx_count | parse_int }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  {% if user.is_app %}
     <div class="col">
       <table class="table table-hover table-responsive">
         <tbody>
           <tr>
-            <th>App Details</th>
+            <th>Userame</th>
+            <td>@{{ user.username }}</td>
           </tr>
           <tr>
-            <th>
-              {% if not user.app %}
-                Not
+            <th>Reputation</th>
+            <td>
+              {% if user.reputation_score %}
+                {% if user.reputation_score < 1 %}☆{% endif %}
+                {% if user.reputation_score >= 1 %}★{% endif %}
+                {% if user.reputation_score >= 2 %}★{% endif %}
+                {% if user.reputation_score >= 3 %}★{% endif %}
+                {% if user.reputation_score >= 4 %}★{% endif %}
+                {% if user.reputation_score >= 5 %}★{% endif %}
+              {% else %}
+                —
               {% endif %}
-              In Directory Service
-            </th>
-            {% if user.app %}
-              <td>
-                <form id="remove_from_dir_form" method="POST" action="/{{ environment }}/app/remove">
-                  <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
-                </form>
-                <a href="#" id="remove_from_dir">(remove)</a></td>
-            {% else %}
-              <td><a href="/{{ environment }}/app/add?token_id={{ user.token_id }}&name={{ user.name if user.name else user.username | urlencode }}">(add)</a></td>
-            {% endif %}
+              ({{ user.review_count }})
+            </td>
           </tr>
-          {% if user.app %}
+          {% if user.name %}
+            <tr>
+              <th>Name</th>
+              <td>{{ user.name }}</td>
+            </tr>
+          {% endif %}
+          <tr>
+            <th>Payment Address</th>
+            <td>{{ user.payment_address }}</td>
+          </tr>
+          <tr>
+            <th>Balance</th>
+            <td>
+              {% if user.balance %}
+                Ξ {{ user.balance.confirmed_balance | to_eth }}
+                {% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
+                  (Ξ {{ user.balance.unconfirmed_balance | to_eth }})
+                {% endif %}
+              {% else %}
+                <span class="badge badge-warning">unknown</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if user.location %}
+            <tr>
+              <th>Location</th>
+              <td>{{ user.location }}
+            </tr>
+          {% endif %}
+          <tr>
+            <th>Next Nonce</th>
+            <td>{{ tx_count | parse_int }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% if user.is_app %}
+      <div class="col">
+        <table class="table table-hover table-responsive">
+          <tbody>
+            <tr>
+              <th>App Details</th>
+            </tr>
             <tr>
               <th>
-                {% if not user.app.featured %}
+                {% if not user.app %}
                   Not
                 {% endif %}
-                Featured
+                In Directory Service
               </th>
-              {% if user.app.featured %}
+              {% if user.app %}
                 <td>
-                  <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                  <form id="remove_from_dir_form" method="POST" action="/{{ environment }}/app/remove">
                     <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
-                    <input type="hidden" name="featured" value="">
                   </form>
-                  <a href="#" class="remove_featured">(unfeature)</a></td>
-                </td>
-              {% else %}
-                <td>
-                  <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
-                    <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
-                    <input type="hidden" name="featured" value="true">
-                  </form>
-                  <a href="#" class="set_featured">(feature)</a></td>
-                </td>
-              {% endif %}
+                  <a href="#" id="remove_from_dir">(remove)</a></td>
+                {% else %}
+                  <td><a href="/{{ environment }}/app/add?token_id={{ user.token_id }}&name={{ user.name if user.name else user.username | urlencode }}">(add)</a></td>
+                {% endif %}
             </tr>
+            {% if user.app %}
+              <tr>
+                <th>
+                  {% if not user.app.featured %}
+                    Not
+                  {% endif %}
+                  Featured
+                </th>
+                {% if user.app.featured %}
+                  <td>
+                    <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                      <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                      <input type="hidden" name="featured" value="">
+                    </form>
+                    <a href="#" class="remove_featured">(unfeature)</a>
+                  </td>
+                {% else %}
+                  <td>
+                    <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                      <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                      <input type="hidden" name="featured" value="true">
+                    </form>
+                    <a href="#" class="set_featured">(feature)</a>
+                  </td>
+                {% endif %}
+              </tr>
             <tr>
               <th>App Name</th>
               <td>{{ user.app.name }}</td>
             </tr>
             <tr>
-            <th>Description</th>
+              <th>Description</th>
               <td>{{ user.app.description }}</td>
             </tr>
             <tr>
@@ -129,30 +129,107 @@
               <td><img src="{{ user.app.avatar_url }}" width="30" height="30"></td>
             </tr>
           {% endif %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+  <nav class="nav">
+    <a class="nav-link active" data-toggle="tab" href="#txs" role="tab">Transactions</a>
+    <span class="nav-link">Reviews:</span>
+    <a class="nav-link" data-toggle="tab" href="#reviews_recieved" role="tab">Received</a>
+    <a class="nav-link" data-toggle="tab" href="#reviews_given" role="tab">Given</a>
+  </nav>
+  <div class="tab-content">
+    <div class="tab-pane active" id="txs">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Hash</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Value</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% include 'tx_list_table.html' %}
         </tbody>
       </table>
     </div>
-  {% endif %}
+    <div class="tab-pane" id="reviews_recieved">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>Rating</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for review in reviews_recieved %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ review.reviewer.token_id }}">
+                  <img src="{{ review.reviewer.avatar }}" width="30" height="30">
+                  @{{ review.reviewer.username or review.reviewer.token_id }}
+                </a>
+              </td>
+              <td>
+                {% if review.rating < 1 %}☆{% endif %}
+                {% if review.rating >= 1 %}★{% endif %}
+                {% if review.rating >= 2 %}★{% endif %}
+                {% if review.rating >= 3 %}★{% endif %}
+                {% if review.rating >= 4 %}★{% endif %}
+                {% if review.rating >= 5 %}★{% endif %}
+              </td>
+              <td>
+                {{ review.review }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reviews_given">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>To</th>
+            <th>Rating</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for review in reviews_given %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ review.reviewee.token_id }}">
+                  <img src="{{ review.reviewee.avatar }}" width="30" height="30">
+                  @{{ review.reviewee.username or review.reviewee.token_id }}
+                </a>
+              </td>
+              <td>
+                {% if review.rating < 1 %}☆{% endif %}
+                {% if review.rating >= 1 %}★{% endif %}
+                {% if review.rating >= 2 %}★{% endif %}
+                {% if review.rating >= 3 %}★{% endif %}
+                {% if review.rating >= 4 %}★{% endif %}
+                {% if review.rating >= 5 %}★{% endif %}
+              </td>
+              <td>
+                {{ review.review }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
-<h4>Recent Transactions</h4>
-<table class="table table-hover">
-  <thead>
-    <tr>
-      <th>Hash</th>
-      <th>From</th>
-      <th>To</th>
-      <th>Value</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% include 'tx_list_table.html' %}
-  </tbody>
-</table>
 {% else %}
   <div class="alert alert-danger" role="alert">
     <strong>Oh snap!</strong> user not found!
   </div>
 {% endif %}
+</div>
 {% endblock %}
