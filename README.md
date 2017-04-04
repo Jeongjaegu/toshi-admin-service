@@ -9,9 +9,29 @@ env/bin/pip install -r requirements.txt
 
 ### Running
 
+To run the development server:
+
 ```
-DATABASE_URL=postgres://<postgres-dsn> env/bin/python -m tokendirectory
+./run.sh
 ```
+
+The server starts on the default port `5000`, to change this set the
+`PORT` environment variable (or edit the `run.sh` script).
+
+Running tools:
+
+```
+./run.sh tokenadmin/tools/<tool_name>.py <arguments>
+```
+
+`./run.sh` requires the heroku command line utility with access to the
+token-services set of apps. If deploying this elsewhere edit the script
+to use your personal heroku apps, or create `.runconfig` manually.
+
+`./run.sh` assumes postgresql is running with a `token` user and
+`token-admin` database, available via the URI: `postgres://token:@127.0.0.1/token-admin`.
+To change this either edit the script to match your desired URI, or set the
+`DATABASE_URL` environemnt variable to your desired URI.
 
 ## Running on heroku
 

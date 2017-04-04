@@ -80,45 +80,46 @@ def add_config(fn):
         return await fn(request, config, *args, **kwargs)
     return wrapper
 
+async def prepare_configs(before_start, app, loop):
+    app.configs = {}
+
+    app.pool = await prepare_database({'dsn': ADMIN_SERVICE_DATABASE_URL})
+    # live
+    live_eth = await create_pool(LIVE_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    live_id = await create_pool(LIVE_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    live_dir = await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    live_rep = await create_pool(LIVE_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    app.configs['live'] = Config("live", live_eth, live_id, live_dir, live_rep,
+                                 LIVE_ETHEREUM_NODE_URL,
+                                 LIVE_ID_SERVICE_URL,
+                                 LIVE_ETH_SERVICE_URL,
+                                 LIVE_DIR_SERVICE_URL,
+                                 LIVE_REP_SERVICE_URL)
+
+    # dev
+    dev_eth = await create_pool(DEV_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    dev_id = await create_pool(DEV_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    dev_dir = await create_pool(DEV_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    dev_rep = await create_pool(DEV_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    app.configs['dev'] = Config("dev", dev_eth, dev_id, dev_dir, dev_rep,
+                                DEV_ETHEREUM_NODE_URL,
+                                DEV_ID_SERVICE_URL,
+                                DEV_ETH_SERVICE_URL,
+                                DEV_DIR_SERVICE_URL,
+                                DEV_REP_SERVICE_URL)
+
+    # configure http client
+    app.http = aiohttp.ClientSession()
+    if before_start:
+        f = before_start()
+        if asyncio.iscoroutine(f):
+            await f
+
 class App(Sanic):
 
     def run(self, *args, **kwargs):
         before_start = kwargs.pop('before_start', None)
-        async def prepare_db(app, loop):
-            app.configs = {}
-
-            app.pool = await prepare_database({'dsn': ADMIN_SERVICE_DATABASE_URL})
-            # live
-            live_eth = await create_pool(LIVE_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            live_id = await create_pool(LIVE_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            live_dir = await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            live_rep = await create_pool(LIVE_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            app.configs['live'] = Config("live", live_eth, live_id, live_dir, live_rep,
-                                         LIVE_ETHEREUM_NODE_URL,
-                                         LIVE_ID_SERVICE_URL,
-                                         LIVE_ETH_SERVICE_URL,
-                                         LIVE_DIR_SERVICE_URL,
-                                         LIVE_REP_SERVICE_URL)
-
-            # dev
-            dev_eth = await create_pool(DEV_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            dev_id = await create_pool(DEV_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            dev_dir = await create_pool(DEV_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            dev_rep = await create_pool(DEV_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-            app.configs['dev'] = Config("dev", dev_eth, dev_id, dev_dir, dev_rep,
-                                        DEV_ETHEREUM_NODE_URL,
-                                        DEV_ID_SERVICE_URL,
-                                        DEV_ETH_SERVICE_URL,
-                                        DEV_DIR_SERVICE_URL,
-                                        DEV_REP_SERVICE_URL)
-
-            # configure http client
-            app.http = aiohttp.ClientSession()
-            if before_start:
-                f = before_start()
-                if asyncio.iscoroutine(f):
-                    await f
-        return super().run(*args, before_start=prepare_db, **kwargs)
+        return super().run(*args, before_start=functools.partial(prepare_configs, before_start), **kwargs)
 
     def route(self, uri, methods=frozenset({'GET'}), host=None, prefixed=False):
         if not uri.startswith('/'):
