@@ -6,7 +6,7 @@ import string
 import logging
 import os
 import functools
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlunparse
 
 from tokenservices.database import prepare_database, create_pool
 from tokenservices.log import configure_logger, log as tokenservices_log
@@ -171,6 +171,24 @@ env.filters['to_eth'] = to_eth
 
 app.static('/public', './public')
 app.static('/favicon.ico', './public/favicon.ico')
+
+@app.middleware('request')
+def force_https(request):
+    host = request.headers.get('Host', '')
+    # get scheme, first by checking the x-forwarded-proto (from nginx/heroku etc)
+    # then falling back on whether or not there is an sslcontext
+    scheme = request.headers.get(
+        'x-forwarded-proto',
+        "https" if request.transport.get_extra_info('sslcontext') else "http")
+    if not host.startswith("localhost:") and scheme != "https":
+        url = urlunparse((
+            "https",
+            host,
+            request.path,
+            None,
+            request.query_string,
+            None))
+        return redirect(url)
 
 def fix_avatar_for_user(id_service_url, user, key='avatar'):
     if not user[key]:
