@@ -385,6 +385,7 @@ async def post_login(request):
         #response.cookies['session']['secure'] = True
         return response
     else:
+        tokenservices_log.info("Invalid login from: {}".format(token_id))
         raise SanicException("Login Failed", status_code=401)
 
 @app.route("/txs", prefixed=True)
