@@ -75,60 +75,52 @@
             </tr>
             <tr>
               <th>
-                {% if not user.app %}
+                {% if not user.featured %}
                   Not
                 {% endif %}
-                In Directory Service
+                Featured
               </th>
-              {% if user.app %}
+              {% if user.featured %}
                 <td>
-                  <form id="remove_from_dir_form" method="POST" action="/{{ environment }}/app/remove">
-                    <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
+                  <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="featured" value="">
                   </form>
-                  <a href="#" id="remove_from_dir">(remove)</a></td>
-                {% else %}
-                  <td><a href="/{{ environment }}/app/add?token_id={{ user.token_id }}&name={{ user.name if user.name else user.username | urlencode }}">(add)</a></td>
+                  <a href="#" class="remove_featured">(unfeature)</a>
+                </td>
+              {% else %}
+                <td>
+                  <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="featured" value="true">
+                  </form>
+                  <a href="#" class="set_featured">(feature)</a>
+                </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <th>
+                {% if not user.blocked %}
+                  Not
                 {% endif %}
-            </tr>
-            {% if user.app %}
-              <tr>
-                <th>
-                  {% if not user.app.featured %}
-                    Not
-                  {% endif %}
-                  Featured
-                </th>
-                {% if user.app.featured %}
-                  <td>
-                    <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
-                      <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
-                      <input type="hidden" name="featured" value="">
-                    </form>
-                    <a href="#" class="remove_featured">(unfeature)</a>
-                  </td>
+                Blocked
+              </th>
+              <td>
+                {% if user.blocked %}
+                  <form id="remove_blocked_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="blocked" value="">
+                  </form>
+                  <a href="#" class="remove_blocked" data-token-id="{{ user.token_id }}">(unblock)</a>
                 {% else %}
-                  <td>
-                    <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
-                      <input type="hidden" name="token_id" value="{{ user.app.token_id }}">
-                      <input type="hidden" name="featured" value="true">
-                    </form>
-                    <a href="#" class="set_featured">(feature)</a>
-                  </td>
+                  <form id="set_blocked_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="blocked" value="true">
+                  </form>
+                  <a href="#" class="set_blocked" data-token-id="{{ user.token_id }}">(block)</a>
                 {% endif %}
-              </tr>
-            <tr>
-              <th>App Name</th>
-              <td>{{ user.app.name }}</td>
+              </td>
             </tr>
-            <tr>
-              <th>Description</th>
-              <td>{{ user.app.description }}</td>
-            </tr>
-            <tr>
-              <th>App Icon</th>
-              <td><img src="{{ user.app.avatar_url }}" width="30" height="30"></td>
-            </tr>
-          {% endif %}
           </tbody>
         </table>
       </div>

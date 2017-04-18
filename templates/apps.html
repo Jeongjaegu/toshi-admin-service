@@ -22,7 +22,7 @@
       <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='reputation_score') }}">Reputation</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='featured') }}">Featured</a></th>
-      <th></th>
+      <th><a class="" href="?{{ get_qargs(order_by='blocked') }}">Blocked</a></th>
     </tr>
   </thead>
   <tbody>
@@ -30,7 +30,7 @@
     <tr>
       <td>
 	<a href="/{{ environment }}/user/{{ app.token_id }}">
-	  <img src="{{ app.avatar_url }}" width="30" height="30">
+	  <img src="{{ app.avatar }}" width="30" height="30">
 	  {{ app.token_id }}
 	</a>
       </td>
@@ -56,8 +56,6 @@
         {% else %}
           no
 	{% endif %}
-      </td>
-      <td>
         {% if app.featured %}
           <form id="remove_featured_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/featured">
             <input type="hidden" name="token_id" value="{{ app.token_id }}">
@@ -73,10 +71,24 @@
         {% endif %}
       </td>
       <td>
-        <form id="remove_from_dir_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/remove">
-          <input type="hidden" name="token_id" value="{{ app.token_id }}">
-        </form>
-        <a href="#" class="remove_from_dir" data-token-id="{{ app.token_id }}">(remove)</a>
+	{% if app.blocked %}
+	  yes
+        {% else %}
+          no
+	{% endif %}
+        {% if app.blocked %}
+          <form id="remove_blocked_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
+            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+            <input type="hidden" name="blocked" value="">
+          </form>
+          <a href="#" class="remove_blocked" data-token-id="{{ app.token_id }}">(unblock)</a>
+        {% else %}
+          <form id="set_blocked_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
+            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+            <input type="hidden" name="blocked" value="true">
+          </form>
+          <a href="#" class="set_blocked" data-token-id="{{ app.token_id }}">(block)</a>
+        {% endif %}
       </td>
     </tr>
   {% endfor %}
