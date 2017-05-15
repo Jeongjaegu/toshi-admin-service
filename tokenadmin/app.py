@@ -634,10 +634,10 @@ async def get_user(request, conf, current_user, token_id):
     async with conf.db.rep.acquire() as con:
         reviews_given_rows = await con.fetch(
             "SELECT * FROM reviews WHERE reviewer_id = $1", token_id)
-        reviews_recieved_rows = await con.fetch(
+        reviews_received_rows = await con.fetch(
             "SELECT * FROM reviews WHERE reviewee_id = $1", token_id)
     reviews_given = []
-    reviews_recieved = []
+    reviews_received = []
     for review in reviews_given_rows:
         async with conf.db.id.acquire() as con:
             reviewee = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewee_id'])
@@ -651,23 +651,40 @@ async def get_user(request, conf, current_user, token_id):
             'review': review['review'],
             'created': review['created']
         })
-    for review in reviews_recieved_rows:
+    for review in reviews_received_rows:
         async with conf.db.id.acquire() as con:
             reviewer = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewer_id'])
         if reviewer:
             reviewer = fix_avatar_for_user(conf.urls.id, dict(reviewer))
         else:
             reviewer = fix_avatar_for_user(conf.urls.id, {'token_id': review['reviewer_id']})
-        reviews_recieved.append({
+        reviews_received.append({
             'reviewer': reviewer,
             'rating': review['rating'],
             'review': review['review'],
             'created': review['created']
         })
 
+    async with conf.db.id.acquire() as con:
+        reports_given_rows = await con.fetch(
+            "SELECT users.token_id, users.username, users.avatar, reports.details "
+            "FROM reports JOIN users "
+            "ON reports.reportee_token_id = users.token_id "
+            "WHERE reports.reporter_token_id = $1",
+            token_id)
+        reports_received_rows = await con.fetch(
+            "SELECT users.token_id, users.username, users.avatar, reports.details "
+            "FROM reports JOIN users "
+            "ON reports.reporter_token_id = users.token_id "
+            "WHERE reports.reportee_token_id = $1",
+            token_id)
+    reports_given = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_given_rows]
+    reports_received = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_received_rows]
+
     return html(await env.get_template("user.html").render_async(
         user=usr, txs=txs, tx_count=tx_count,
-        reviews_given=reviews_given, reviews_recieved=reviews_recieved,
+        reviews_given=reviews_given, reviews_received=reviews_received,
+        reports_given=reports_given, reports_received=reports_received,
         current_user=current_user, environment=conf.name, page="users"))
 
 sortable_apps_columns = ['created', 'name', 'reputation_score', 'featured', 'blocked']
@@ -784,3 +801,51 @@ async def blocked_app_handler_post(request, conf, current_user):
             return redirect(request.headers['Referer'])
         return redirect("/{}/user/{}".format(conf.name, token_id))
     return redirect("/{}/apps".format(conf.name))
+
+@app.route("/reports", prefixed=True)
+@requires_login
+async def get_reports(request, conf, current_user):
+    page = parse_int(request.args.get('page', None)) or 1
+    if page < 1:
+        page = 1
+    limit = 10
+    offset = (page - 1) * limit
+
+    sql = ("SELECT * FROM reports "
+           "ORDER BY report_id DESC "
+           "OFFSET $1 LIMIT $2")
+    args = [offset, limit]
+    count_sql = ("SELECT COUNT(*) FROM reports")
+    count_args = []
+    async with conf.db.id.acquire() as con:
+        rows = await con.fetch(sql, *args)
+        count = await con.fetchrow(count_sql, *count_args)
+
+    reports = []
+    for row in rows:
+        async with conf.db.id.acquire() as con:
+            reporter = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", row['reporter_token_id'])
+            reportee = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", row['reportee_token_id'])
+
+        reporter = fix_avatar_for_user(conf.urls.id, dict(reporter))
+        reportee = fix_avatar_for_user(conf.urls.id, dict(reportee))
+        reports.append({
+            'reporter': reporter,
+            'reportee': reportee,
+            'details': row['details'],
+            'date': row['date']
+        })
+
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
+
+    def get_qargs(page=page, as_list=False, as_dict=False):
+        qargs = {'page': page}
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
+        return urlencode(qargs)
+
+    return html(await env.get_template("reports.html").render_async(
+        reports=reports, current_user=current_user, environment=conf.name, page="reports",
+        total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))

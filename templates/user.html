@@ -129,8 +129,11 @@
   <nav class="nav">
     <a class="nav-link active" data-toggle="tab" href="#txs" role="tab">Transactions</a>
     <span class="nav-link">Reviews:</span>
-    <a class="nav-link" data-toggle="tab" href="#reviews_recieved" role="tab">Received</a>
-    <a class="nav-link" data-toggle="tab" href="#reviews_given" role="tab">Given</a>
+    <a class="nav-link" data-toggle="tab" href="#reviews_received" role="tab">Received ({{ reviews_received | length }})</a>
+    <a class="nav-link" data-toggle="tab" href="#reviews_given" role="tab">Given ({{ reviews_given | length }})</a>
+    <span class="nav-link">Reports:</span>
+    <a class="nav-link" data-toggle="tab" href="#reports_received" role="tab">Received ({{ reports_received | length }})</a>
+    <a class="nav-link" data-toggle="tab" href="#reports_given" role="tab">Given ({{ reports_given | length }})</a>
   </nav>
   <div class="tab-content">
     <div class="tab-pane active" id="txs">
@@ -149,7 +152,7 @@
         </tbody>
       </table>
     </div>
-    <div class="tab-pane" id="reviews_recieved">
+    <div class="tab-pane" id="reviews_received">
       <table class="table table-hover">
         <thead>
           <tr>
@@ -159,7 +162,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for review in reviews_recieved %}
+          {% for review in reviews_received %}
             <tr>
               <td>
                 <a href="/{{ environment }}/user/{{ review.reviewer.token_id }}">
@@ -212,6 +215,52 @@
               <td>
                 {{ review.review }}
               </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reports_received">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Reporter</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports_received %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ report.token_id }}">
+                  <img src="{{ report.avatar }}" width="30" height="30">
+                  @{{ report.username or report.token_id }}
+                </a>
+              </td>
+              <td>{{ report.details }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reports_given">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Reportee</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports_given %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ report.token_id }}">
+                  <img src="{{ report.avatar }}" width="30" height="30">
+                  @{{ report.username or report.token_id }}
+                </a>
+              </td>
+              <td>{{ report.details }}</td>
             </tr>
           {% endfor %}
         </tbody>
