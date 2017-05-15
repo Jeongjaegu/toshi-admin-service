@@ -399,9 +399,9 @@ async def get_txs(request, conf, user):
     where_clause = ''
     filters = [f for f in request.args.getlist('filter', []) if f in ['confirmed', 'unconfirmed', 'error']]
     if filters:
-        where_clause = "WHERE " + " OR ".join("last_status = '{}'".format(f) for f in filters)
+        where_clause = "WHERE " + " OR ".join("status = '{}'".format(f) for f in filters)
         if 'unconfirmed' in filters:
-            where_clause += " OR last_status IS NULL"
+            where_clause += " OR status IS NULL"
     async with conf.db.eth.acquire() as con:
         rows = await con.fetch(
             "SELECT * FROM transactions {} ORDER BY created DESC OFFSET $1 LIMIT $2".format(where_clause),

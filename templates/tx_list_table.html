@@ -1,5 +1,5 @@
 {% for tx in txs %}
-<tr {% if not tx.last_status or tx.last_status == 'unconfirmed' %}class="table-danger"{% endif %}>
+<tr {% if not tx.status or tx.status == 'queued' or tx.status == 'unconfirmed' %}class="table-danger"{% endif %}>
   <td><a href="/{{ environment }}/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
   <td>
     {% if tx.from_user %}
@@ -24,6 +24,6 @@
     {% endif %}
   </td>
   <td>Ξ {{ tx.value | to_eth }}</td>
-  <td>{{ tx.last_status }}</td>
+  <td>{{ tx.status }}</td>
 </tr>
 {% endfor %}

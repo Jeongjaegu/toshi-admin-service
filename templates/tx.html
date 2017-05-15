@@ -69,9 +69,9 @@
 	  <th>status</th>
 	  <td>
 	    {% if db %}
-	    {% if db.last_status == 'confirmed' %}
+	    {% if db.status == 'confirmed' %}
 	    <span class="badge badge-success">Confirmed</span>
-	    {% elif db.last_status == 'unconfirmed' or not db.last_status %}
+	    {% elif db.status != 'error' %}
 	    {% if node.blockNumber %}
 	    <span class="badge badge-warning">Confirmed on network but unconfirmed in database</span>
 	    {% else %}
