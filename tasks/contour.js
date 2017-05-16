@@ -32,7 +32,8 @@ module.exports = {
       "entries": [
         "index",
 	"login",
-	"txs"
+	"txs",
+        "config"
       ]
     }
   }

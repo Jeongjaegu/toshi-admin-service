@@ -1,0 +1,49 @@
+{% extends "index.html" %}
+{% block body %}
+  <nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+    <a class="navbar-brand" href="#">Admins ({{ admins | length }})</a>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+        </ul>
+        <form class="form-inline my-2 my-lg-0" id="add_admin_form" action="/config/admin/add" method="POST">
+          <input class="form-control mr-sm-2" name="username" type="text" placeholder="@username">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">add</button>
+        </form>
+      </div>
+  </nav>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th><a class="" href="?">Token Id</a></th>
+        <th><a class="" href="?">Username</a></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for admin in admins %}
+        <tr>
+          <td>
+	    <a href="/{{ environment }}/user/{{ admin.token_id }}">
+	      <img src="{{ admin.avatar }}" width="30" height="30">
+	      {{ admin.token_id }}
+	    </a>
+          </td>
+          <td>
+	    <a href="/{{ environment }}/user/{{ admin.token_id }}">
+	      @{{ admin.username }}
+	    </a>
+          </td>
+          <td>
+            <form id="remove_admin_form_{{ admin.token_id }}" method="POST" action="/config/admin/remove">
+              <input type="hidden" name="token_id" value="{{ admin.token_id }}">
+            </form>
+            <a href="#" class="remove_admin" data-token-id="{{ admin.token_id }}">remove</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+{% block script %}
+  <script src="/public/config.js"></script>
+{% endblock %}

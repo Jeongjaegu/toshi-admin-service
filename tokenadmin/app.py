@@ -191,7 +191,7 @@ def force_https(request):
         return redirect(url)
 
 def fix_avatar_for_user(id_service_url, user, key='avatar'):
-    if not user[key]:
+    if key not in user or not user[key]:
         user[key] = "{}/identicon/{}.png".format(id_service_url, user['token_id'])
     elif user[key].startswith('/'):
         user[key] = "{}{}".format(
@@ -387,6 +387,64 @@ async def post_login(request):
     else:
         tokenservices_log.info("Invalid login from: {}".format(token_id))
         raise SanicException("Login Failed", status_code=401)
+
+@app.route("/config")
+@requires_login
+async def get_config_home(request, current_user):
+    # get list of admins
+    async with app.pool.acquire() as con:
+        admins = await con.fetch("SELECT * FROM admins")
+    users = []
+    for admin in admins:
+        async with app.configs['live'].db.id.acquire() as con:
+            user = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", admin['token_id'])
+        if user is None:
+            user = {'token_id': admin['token_id']}
+        users.append(fix_avatar_for_user(app.configs['live'].urls.id, dict(user)))
+    return html(await env.get_template("config.html").render_async(
+        admins=users,
+        current_user=current_user, environment='config', page="home"))
+
+@app.route("/config/admin/<action>", methods=["POST"])
+@requires_login
+async def post_admin_add_remove(request, current_user, action):
+    if 'token_id' in request.form:
+        token_id = request.form.get('token_id')
+        if not token_id:
+            SanicException("Bad Arguments", status_code=400)
+    elif 'username' in request.form:
+        username = request.form.get('username')
+        if not username:
+            raise SanicException("Bad Arguments", status_code=400)
+        if username[0] == '@':
+            username = username[1:]
+            if not username:
+                raise SanicException("Bad Arguments", status_code=400)
+        async with app.configs['live'].db.id.acquire() as con:
+            user = await con.fetchrow("SELECT * FROM users WHERE username = $1", username)
+            if user is None and username.startswith("0x"):
+                user = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", username)
+        if user is None:
+            raise SanicException("User not found", status_code=400)
+        token_id = user['token_id']
+    else:
+        SanicException("Bad Arguments", status_code=400)
+
+    if action == 'add':
+        print('adding admin: {}'.format(token_id))
+        async with app.pool.acquire() as con:
+            await con.execute("INSERT INTO admins VALUES ($1) ON CONFLICT DO NOTHING", token_id)
+    elif action == 'remove':
+        print('removing admin: {}'.format(token_id))
+        async with app.pool.acquire() as con:
+            await con.execute("DELETE FROM admins WHERE token_id = $1", token_id)
+            await con.execute("DELETE FROM sessions WHERE token_id = $1", token_id)
+    else:
+        raise SanicException("Not Found", status_code=404)
+
+    if 'Referer' in request.headers:
+        return redirect(request.headers['Referer'])
+    return redirect("/config")
 
 @app.route("/txs", prefixed=True)
 @requires_login

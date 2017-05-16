@@ -33,24 +33,26 @@
       </nav>
       <nav class="navbar navbar-light navbar-toggleable-sm bg-faded justify-content-center">
 	<div class="navbar-collapse collapse">
-	  {% if environment %}
-	  <ul class="navbar-nav mx-auto w-100">
-	    <li class="nav-item">
-	      <a class="nav-link{% if page == 'home' %} active{% endif %}" href="/{{ environment }}">Home</a>
-	    </li>
-	    <li class="nav-item">
-	      <a class="nav-link{% if page == 'users' %} active{% endif %}" href="/{{ environment }}/users">Users</a>
-	    </li>
-	    <li class="nav-item">
-	      <a class="nav-link{% if page == 'txs' %} active{% endif %}" href="/{{ environment }}/txs">Transactions</a>
-	    </li>
-	    <li class="nav-item">
-	      <a class="nav-link{% if page == 'apps' %} active{% endif %}" href="/{{ environment }}/apps">Apps</a>
-	    </li>
-	    <li class="nav-item">
-	      <a class="nav-link{% if page == 'reports' %} active{% endif %}" href="/{{ environment }}/reports">Reports</a>
-	    </li>
-	  </ul>
+	  {% if environment == 'live' or environment == 'dev' %}
+	    <ul class="navbar-nav mx-auto w-100">
+	      <li class="nav-item">
+	        <a class="nav-link{% if page == 'home' %} active{% endif %}" href="/{{ environment }}">Home</a>
+	      </li>
+	      <li class="nav-item">
+	        <a class="nav-link{% if page == 'users' %} active{% endif %}" href="/{{ environment }}/users">Users</a>
+	      </li>
+	      <li class="nav-item">
+	        <a class="nav-link{% if page == 'txs' %} active{% endif %}" href="/{{ environment }}/txs">Transactions</a>
+	      </li>
+	      <li class="nav-item">
+	        <a class="nav-link{% if page == 'apps' %} active{% endif %}" href="/{{ environment }}/apps">Apps</a>
+	      </li>
+	      <li class="nav-item">
+	        <a class="nav-link{% if page == 'reports' %} active{% endif %}" href="/{{ environment }}/reports">Reports</a>
+	      </li>
+	    </ul>
+          {% elif environment == 'config' %}
+
 	  {% endif %}
 	  <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
 	    <li class="nav-item">
@@ -58,6 +60,9 @@
 	    </li>
 	    <li class="nav-item">
 	      <a class="nav-link{% if environment == 'live' %} active{% endif %}" href="/live{% if page != 'home' %}/{{ page }}{% endif %}">live</a>
+	    </li>
+	    <li class="nav-item">
+	      <a class="nav-link{% if environment == 'config' %} active{% endif %}" href="/config{% if page != 'home' %}/{{ page }}{% endif %}">config</a>
 	    </li>
 	  </ul>
 	</div>
