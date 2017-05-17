@@ -21,7 +21,9 @@
 	      <span class="navbar-text">{% if current_user.name %}{{ current_user.name }} {% endif %}@{{ current_user.username }}</span>
 	    </li>
 	    <li class="nav-item">
-	      <a class="nav-link" href="/logout">logout</a>
+              <form id="logout_form" method="POST" action="/logout">
+              </form>
+	      <a class="nav-link logout" href="#">logout</a>
 	    </li>
 	    <li class="nav-item">
 	      <a class="navbar-brand">

@@ -388,6 +388,18 @@ async def post_login(request):
         tokenservices_log.info("Invalid login from: {}".format(token_id))
         raise SanicException("Login Failed", status_code=401)
 
+@app.post("/logout")
+async def post_logout(request):
+
+    session_cookie = request.cookies.get('session')
+    if session_cookie:
+        async with app.pool.acquire() as con:
+            await con.execute("DELETE FROM sessions "
+                              "WHERE sessions.session_id = $1",
+                              session_cookie)
+        del request.cookies['session']
+    return redirect("/login")
+
 @app.route("/config")
 @requires_login
 async def get_config_home(request, current_user):

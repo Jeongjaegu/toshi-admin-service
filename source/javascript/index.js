@@ -55,3 +55,8 @@ $(".set_blocked").click((e) => {
         $("#set_blocked_form").submit();
     }
 });
+
+$(".logout").click((e) => {
+  e.preventDefault();
+  $("#logout_form").submit();
+});
