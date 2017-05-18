@@ -508,7 +508,7 @@ async def get_tx(request, conf, current_user, tx_hash):
     context = {'current_user': current_user, 'hash': tx_hash, 'environment': conf.name, 'page': 'txs'}
     async with conf.db.eth.acquire() as con:
         row = await con.fetchrow(
-            "SELECT * FROM transactions WHERE transaction_hash = $1",
+            "SELECT * FROM transactions WHERE hash = $1",
             tx_hash)
         bnum = await con.fetchrow(
             "SELECT blocknumber FROM last_blocknumber")

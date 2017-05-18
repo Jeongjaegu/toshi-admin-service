@@ -1,6 +1,6 @@
 {% for tx in txs %}
 <tr {% if not tx.status or tx.status == 'queued' or tx.status == 'unconfirmed' %}class="table-danger"{% endif %}>
-  <td><a href="/{{ environment }}/tx/{{ tx.transaction_hash }}">{{ tx.transaction_hash|truncate(length=16) }}</a></td>
+  <td><a href="/{{ environment }}/tx/{{ tx.hash }}">{{ tx.hash|truncate(length=16) }}</a></td>
   <td>
     {% if tx.from_user %}
     <a href="/{{ environment }}/user/{{ tx.from_user.token_id }}">
