@@ -14,13 +14,17 @@
   </td>
   <td>
     {% if tx.to_user %}
-    <a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
-      <img src="{{ tx.to_user.avatar }}" width="30" height="30">
-      @{{ tx.to_user.username }}
-    </a>
+      <a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
+        <img src="{{ tx.to_user.avatar }}" width="30" height="30">
+        @{{ tx.to_user.username }}
+      </a>
     {% else %}
-    <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
-    {{ tx.to_address|truncate(length=16) }}
+      {% if tx.to_address %}
+        <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
+        {{ tx.to_address|truncate(length=16) }}
+      {% else %}
+        Contract Deployment
+      {% endif %}
     {% endif %}
   </td>
   <td>Ξ {{ tx.value | to_eth }}</td>
