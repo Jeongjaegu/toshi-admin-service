@@ -60,3 +60,20 @@ $(".logout").click((e) => {
   e.preventDefault();
   $("#logout_form").submit();
 });
+
+$("button.add_category").click((e) => {
+  e.preventDefault();
+  $("#add_category_form").submit();
+});
+
+$("div.edit_category").dblclick((e) => {
+  e.preventDefault();
+  var self = e.currentTarget;
+  var name = $(self).text();
+  var inp = $('<input type="text" name="category" placeholder="Category..." value="' + name + '">')
+  $(self).parent().append(inp);
+  $(self).parent().append('<input type="submit" value="update">');
+  $(self).detach();
+  inp.focus();
+  inp.select();
+});

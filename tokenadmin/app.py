@@ -11,6 +11,7 @@ from urllib.parse import urlencode, urlunparse
 from tokenservices.database import prepare_database, create_pool
 from tokenservices.log import configure_logger, log as tokenservices_log
 
+from asyncpg.exceptions import UniqueViolationError
 from sanic import Sanic
 from sanic.exceptions import SanicException
 from sanic.log import log as sanic_log
@@ -751,6 +752,15 @@ async def get_user(request, conf, current_user, token_id):
     reports_given = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_given_rows]
     reports_received = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_received_rows]
 
+    if usr['is_app']:
+        async with conf.db.id.acquire() as con:
+            rows = await con.fetch(
+                "SELECT * FROM categories JOIN app_categories "
+                "ON categories.category_id = app_categories.category_id "
+                "WHERE token_id = $1", token_id)
+        categories = ", ".join([row['tag'] for row in rows])
+        usr['categories'] = categories
+
     return html(await env.get_template("user.html").render_async(
         user=usr, txs=txs, tx_count=tx_count,
         reviews_given=reviews_given, reviews_received=reviews_received,
@@ -872,6 +882,29 @@ async def blocked_app_handler_post(request, conf, current_user):
         return redirect("/{}/user/{}".format(conf.name, token_id))
     return redirect("/{}/apps".format(conf.name))
 
+@app.route("/app/categories", prefixed=True, methods=["POST"])
+@requires_login
+async def update_app_categories_handler(request, conf, current_user):
+    token_id = request.form.get('token_id')
+    categories = request.form.get('categories', "")
+    if token_id is not None:
+
+        tags = [s.strip() for s in categories.split(",")]
+
+        async with conf.db.id.acquire() as con:
+            categories = await con.fetch("SELECT * FROM categories WHERE tag = ANY($1)", tags)
+            categories = [row['category_id'] for row in categories]
+            async with con.transaction():
+                await con.execute("DELETE FROM app_categories WHERE token_id = $1", token_id)
+                await con.executemany(
+                    "INSERT INTO app_categories VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    [(category_id, token_id) for category_id in categories])
+        if 'Referer' in request.headers:
+            return redirect(request.headers['Referer'])
+        return redirect("/{}/user/{}".format(conf.name, token_id))
+    return redirect("/{}/apps".format(conf.name))
+
+
 @app.route("/reports", prefixed=True)
 @requires_login
 async def get_reports(request, conf, current_user):
@@ -919,3 +952,83 @@ async def get_reports(request, conf, current_user):
     return html(await env.get_template("reports.html").render_async(
         reports=reports, current_user=current_user, environment=conf.name, page="reports",
         total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
+
+@app.route("/categories", prefixed=True)
+@requires_login
+async def get_categories(request, conf, current_user):
+
+    language = 'en'
+
+    sql = ("SELECT * FROM categories "
+           "JOIN category_names ON categories.category_id = category_names.category_id AND category_names.language = $1"
+           "ORDER BY categories.category_id DESC ")
+
+    async with conf.db.id.acquire() as con:
+        rows = await con.fetch(sql, language)
+
+    return html(await env.get_template("categories.html").render_async(
+        categories=rows, current_user=current_user, environment=conf.name, page="categories"))
+
+@app.route("/categories", prefixed=True, methods=["POST"])
+@requires_login
+async def update_categories(request, conf, current_user):
+
+    category_name = request.form.get('category', None)
+    category_tag = request.form.get('tag', None)
+    category_id = request.form.get('id', None)
+    should_remove = request.form.get('remove', None)
+    language = 'en'
+
+    error = None
+
+    if should_remove is not None:
+
+        if category_id is None:
+            error = "Missing category id"
+        else:
+            category_id = parse_int(category_id)
+
+            async with conf.db.id.acquire() as con:
+                await con.fetchval(
+                    "DELETE FROM categories WHERE category_id = $1",
+                    category_id)
+
+    elif category_tag is None or category_name is None:
+        error = "Missing name and tag"
+
+    else:
+
+        # force tags to be lowercase
+        category_tag = category_tag.lower()
+
+        if category_id is None:
+            try:
+                async with conf.db.id.acquire() as con:
+                    category_id = await con.fetchval(
+                        "INSERT INTO categories (tag) VALUES ($1) RETURNING category_id",
+                        category_tag)
+            except UniqueViolationError:
+                error = "Tag already exists"
+
+        # check again because we only update if the category_id was supplied by the user
+        # or the insert statement above succeeded.
+        if category_id is not None:
+
+            category_id = parse_int(category_id)
+
+            async with conf.db.id.acquire() as con:
+                await con.execute(
+                    "INSERT INTO category_names (category_id, name, language) VALUES ($1, $2, $3) "
+                    "ON CONFLICT (category_id, language) DO UPDATE SET name = EXCLUDED.name",
+                    category_id, category_name, language)
+
+    get_sql = ("SELECT * FROM categories "
+               "JOIN category_names ON categories.category_id = category_names.category_id AND category_names.language = $1"
+               "ORDER BY categories.tag ASC ")
+
+    async with conf.db.id.acquire() as con:
+        rows = await con.fetch(get_sql, language)
+
+    return html(await env.get_template("categories.html").render_async(
+        categories=rows, error=error,
+        current_user=current_user, environment=conf.name, page="categories"))

@@ -1,0 +1,65 @@
+{% extends "index.html" %}
+{% block body %}
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#">Categories</a>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+    </ul>
+    <form class="form-inline my-2 my-lg-0" id="filterform" action="/{{ environment }}/categories" method="GET">
+    </form>
+  </div>
+</nav>
+{% if error %}
+  <div class="alert alert-danger">
+    <strong>Error!</strong> {{ error }}
+  </div>
+{% endif %}
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Tag</th>
+      <th>Name</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for category in categories %}
+      <tr>
+        <td>
+          {{ category.category_id }}
+        </td>
+        <td>
+          {{ category.tag }}
+        </td>
+        <td>
+          <form id="update_category_form_{{ category.tag }}" method="POST" action="/{{ environment }}/categories">
+            <div class="edit_category">{{ category.name }}</div>
+            <input type="hidden" name="tag" value="{{ category.tag }}">
+            <input type="hidden" name="id" value="{{ category.category_id }}">
+          </form>
+        </td>
+        <td>
+          <form id="update_category_form_{{ category.tag }}" method="POST" action="/{{ environment }}/categories">
+            <input type="hidden" name="id" value="{{ category.category_id }}">
+            <input type="submit" name="remove" value="remove">
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    <tr>
+      <form id="add_category_form" method="POST" action="/{{ environment }}/categories">
+        <td>+</td>
+        <td>
+          <input name="tag" placeholder="Tag..."/>
+        </td>
+        <td>
+          <input name="category" placeholder="Category..."/>
+        </td>
+        <td><button class="add_category">add</button></td>
+      </form>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}

@@ -121,6 +121,18 @@
                 {% endif %}
               </td>
             </tr>
+            <tr>
+              <td>
+                Categories
+              </td>
+              <td>
+                <form id="set_categories_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/categories">
+                  <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                  <input type="text" name="categories" value="{{ user.categories }}">
+                  <input type="submit" value="update">
+                </form>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
