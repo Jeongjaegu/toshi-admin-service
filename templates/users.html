@@ -22,7 +22,7 @@
 <table class="table table-hover">
   <thead>
     <tr>
-      <th><a class="" href="?{{ get_qargs(order_by='created') }}">Token Id</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='created') }}">Toshi Id</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='username') }}">Username</a></th>
       <th>Balance</th>
       <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
@@ -35,13 +35,13 @@
     {% for user in users %}
     <tr>
       <td>
-	<a href="/{{ environment }}/user/{{ user.token_id }}">
+	<a href="/{{ environment }}/user/{{ user.toshi_id }}">
 	  <img src="{{ user.avatar }}" width="30" height="30">
-	  {{ user.token_id }}
+	  {{ user.toshi_id }}
 	</a>
       </td>
       <td>
-	<a href="/{{ environment }}/user/{{ user.token_id }}">
+	<a href="/{{ environment }}/user/{{ user.toshi_id }}">
 	  @{{ user.username }}
 	</a>
       </td>

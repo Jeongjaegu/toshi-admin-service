@@ -20,13 +20,13 @@
       <tr>
         <td>{{ report.date }}</td>
         <td>
-	  <a href="/{{ environment }}/user/{{ report.reporter.token_id }}">
+	  <a href="/{{ environment }}/user/{{ report.reporter.toshi_id }}">
 	    <img src="{{ report.reporter.avatar }}" width="30" height="30">
 	    @{{ report.reporter.username }}
 	  </a>
         </td>
         <td>
-	  <a href="/{{ environment }}/user/{{ report.reportee.token_id }}">
+	  <a href="/{{ environment }}/user/{{ report.reportee.toshi_id }}">
 	    <img src="{{ report.reportee.avatar }}" width="30" height="30">
 	    @{{ report.reportee.username }}
 	  </a>

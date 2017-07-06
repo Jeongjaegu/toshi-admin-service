@@ -14,7 +14,7 @@
   <table class="table table-hover">
     <thead>
       <tr>
-        <th><a class="" href="?">Token Id</a></th>
+        <th><a class="" href="?">Toshi Id</a></th>
         <th><a class="" href="?">Username</a></th>
         <th></th>
       </tr>
@@ -23,21 +23,21 @@
       {% for admin in admins %}
         <tr>
           <td>
-	    <a href="/{{ environment }}/user/{{ admin.token_id }}">
+	    <a href="/{{ environment }}/user/{{ admin.toshi_id }}">
 	      <img src="{{ admin.avatar }}" width="30" height="30">
-	      {{ admin.token_id }}
+	      {{ admin.toshi_id }}
 	    </a>
           </td>
           <td>
-	    <a href="/{{ environment }}/user/{{ admin.token_id }}">
+	    <a href="/{{ environment }}/user/{{ admin.toshi_id }}">
 	      @{{ admin.username }}
 	    </a>
           </td>
           <td>
-            <form id="remove_admin_form_{{ admin.token_id }}" method="POST" action="/config/admin/remove">
-              <input type="hidden" name="token_id" value="{{ admin.token_id }}">
+            <form id="remove_admin_form_{{ admin.toshi_id }}" method="POST" action="/config/admin/remove">
+              <input type="hidden" name="toshi_id" value="{{ admin.toshi_id }}">
             </form>
-            <a href="#" class="remove_admin" data-token-id="{{ admin.token_id }}">remove</a>
+            <a href="#" class="remove_admin" data-toshi-id="{{ admin.toshi_id }}">remove</a>
           </td>
         </tr>
       {% endfor %}

@@ -28,12 +28,12 @@
 	  <th>from</th>
 	  <td>
 	    {% if from_user %}
-	    <a href="/{{ environment }}/user/{{ from_user.token_id }}">
+	    <a href="/{{ environment }}/user/{{ from_user.toshi_id }}">
 	      <img src="{{ from_user.avatar }}" width="30" height="30">
 	      @{{ from_user.username }}
 	    </a>
 	    {% else %}
-	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.from }}.png" width="30" height="30">
+	    <img src="https://toshi-id-service.herokuapp.com/identicon/{{ node.from }}.png" width="30" height="30">
 	    {{ node.from }}
 	    {% endif %}
 	  </td>
@@ -43,12 +43,12 @@
 	  <th>to</th>
 	  <td>
 	    {% if to_user %}
-	    <a href="/{{ environment }}/user/{{ to_user.token_id }}">
+	    <a href="/{{ environment }}/user/{{ to_user.toshi_id }}">
 	      <img src="{{ to_user.avatar }}" width="30" height="30">
 	      @{{ to_user.username }}
 	    </a>
 	    {% elif node.to %}
-	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.to }}.png" width="30" height="30">
+	    <img src="https://toshi-id-service.herokuapp.com/identicon/{{ node.to }}.png" width="30" height="30">
 	    {{ node.to }}
 	    {% endif %}
 	  </td>
@@ -56,10 +56,10 @@
 	  <th>created contract</th>
 	  <td>
 	    {% if receipt %}
-	    <img src="https://token-id-service.herokuapp.com/identicon/{{ receipt.contractAddress }}.png" width="30" height="30">
+	    <img src="https://toshi-id-service.herokuapp.com/identicon/{{ receipt.contractAddress }}.png" width="30" height="30">
 	    {{ receipt.contractAddress }}
 	    {% else %}
-	    <img src="https://token-id-service.herokuapp.com/identicon/{{ node.creates }}.png" width="30" height="30">
+	    <img src="https://toshi-id-service.herokuapp.com/identicon/{{ node.creates }}.png" width="30" height="30">
 	    {{ node.creates }}
 	    {% endif %}
 	  </td>

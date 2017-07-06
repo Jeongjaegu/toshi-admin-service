@@ -1,11 +1,11 @@
-from tokenservices.utils import parse_int
+from toshi.utils import parse_int
 import json
 import random
-from tokenadmin.app import app
+from toshiadmin.app import app
 
 async def check_account_nonces(conf, dryrun=False):
     async with conf.db.id.acquire() as con:
-        users = await con.fetch("SELECT token_id, payment_address FROM users")
+        users = await con.fetch("SELECT toshi_id, payment_address FROM users")
 
     last_percent = -1
     async with conf.db.eth.acquire() as con:
@@ -34,7 +34,7 @@ async def check_account_nonces(conf, dryrun=False):
                     res = await con.execute("UPDATE transactions SET last_status = 'error' WHERE from_address = $1 AND nonce >= $2 AND last_status != 'error'",
                                             from_address, nonce)
                     if res != "UPDATE 0":
-                        print("{}|{}: {}".format(user['token_id'], from_address, res))
+                        print("{}|{}: {}".format(user['toshi_id'], from_address, res))
 
         if dryrun:
             await tr.rollback()
@@ -42,7 +42,7 @@ async def check_account_nonces(conf, dryrun=False):
             await tr.commit()
 
 if __name__ == '__main__':
-    from tokenadmin.tools import tool_start
+    from toshiadmin.tools import tool_start
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option('--dryrun', action="store_true", dest="dryrun", default=False)

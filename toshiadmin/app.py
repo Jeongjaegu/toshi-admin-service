@@ -8,8 +8,8 @@ import os
 import functools
 from urllib.parse import urlencode, urlunparse
 
-from tokenservices.database import prepare_database, create_pool
-from tokenservices.log import configure_logger, log as tokenservices_log
+from toshi.database import prepare_database, create_pool
+from toshi.log import configure_logger, log as toshi_log
 
 from asyncpg.exceptions import UniqueViolationError
 from sanic import Sanic
@@ -19,9 +19,9 @@ from sanic.response import html, json as json_response, redirect
 from sanic.request import Request
 from jinja2 import Environment, FileSystemLoader
 
-from tokenservices.utils import parse_int
+from toshi.utils import parse_int
 
-tokenservices_log.setLevel(logging.DEBUG)
+toshi_log.setLevel(logging.DEBUG)
 configure_logger(sanic_log)
 
 ADMIN_SERVICE_DATABASE_URL = os.getenv("DATABASE_URL")
@@ -193,14 +193,14 @@ def force_https(request):
 
 def fix_avatar_for_user(id_service_url, user, key='avatar'):
     if key not in user or not user[key]:
-        user[key] = "{}/identicon/{}.png".format(id_service_url, user['token_id'])
+        user[key] = "{}/identicon/{}.png".format(id_service_url, user['toshi_id'])
     elif user[key].startswith('/'):
         user[key] = "{}{}".format(
             id_service_url,
             user[key])
     return user
 
-async def get_token_user_from_payment_address(conf, address):
+async def get_toshi_user_from_payment_address(conf, address):
     async with conf.db.id.acquire() as con:
         rows = await con.fetch("SELECT * FROM users WHERE payment_address = $1", address)
 
@@ -217,12 +217,12 @@ def requires_login(fn):
         session_cookie = request.cookies.get('session')
         if session_cookie:
             async with app.pool.acquire() as con:
-                admin = await con.fetchrow("SELECT admins.token_id FROM admins "
-                                           "JOIN sessions ON admins.token_id = sessions.token_id "
+                admin = await con.fetchrow("SELECT admins.toshi_id FROM admins "
+                                           "JOIN sessions ON admins.toshi_id = sessions.toshi_id "
                                            "WHERE sessions.session_id = $1",
                                            session_cookie)
             if admin:
-                url = '{}/v1/user/{}'.format(ID_SERVICE_LOGIN_URL, admin['token_id'])
+                url = '{}/v1/user/{}'.format(ID_SERVICE_LOGIN_URL, admin['toshi_id'])
                 resp = await app.http.get(url)
                 if resp.status == 200:
                     admin = await resp.json()
@@ -373,20 +373,20 @@ async def post_login(request):
         raise SanicException("Login Failed", status_code=401)
 
     user = await resp.json()
-    token_id = user['token_id']
+    toshi_id = user['toshi_id']
     session_id = generate_session_id()
     async with app.pool.acquire() as con:
-        admin = await con.fetchrow("SELECT * FROM admins WHERE token_id = $1", token_id)
+        admin = await con.fetchrow("SELECT * FROM admins WHERE toshi_id = $1", toshi_id)
         if admin:
-            await con.execute("INSERT INTO sessions (session_id, token_id) VALUES ($1, $2)",
-                              session_id, token_id)
+            await con.execute("INSERT INTO sessions (session_id, toshi_id) VALUES ($1, $2)",
+                              session_id, toshi_id)
     if admin:
         response = json_response(user)
         response.cookies['session'] = session_id
         #response.cookies['session']['secure'] = True
         return response
     else:
-        tokenservices_log.info("Invalid login from: {}".format(token_id))
+        toshi_log.info("Invalid login from: {}".format(toshi_id))
         raise SanicException("Login Failed", status_code=401)
 
 @app.post("/logout")
@@ -410,9 +410,9 @@ async def get_config_home(request, current_user):
     users = []
     for admin in admins:
         async with app.configs['live'].db.id.acquire() as con:
-            user = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", admin['token_id'])
+            user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", admin['toshi_id'])
         if user is None:
-            user = {'token_id': admin['token_id']}
+            user = {'toshi_id': admin['toshi_id']}
         users.append(fix_avatar_for_user(app.configs['live'].urls.id, dict(user)))
     return html(await env.get_template("config.html").render_async(
         admins=users,
@@ -421,9 +421,9 @@ async def get_config_home(request, current_user):
 @app.route("/config/admin/<action>", methods=["POST"])
 @requires_login
 async def post_admin_add_remove(request, current_user, action):
-    if 'token_id' in request.form:
-        token_id = request.form.get('token_id')
-        if not token_id:
+    if 'toshi_id' in request.form:
+        toshi_id = request.form.get('toshi_id')
+        if not toshi_id:
             SanicException("Bad Arguments", status_code=400)
     elif 'username' in request.form:
         username = request.form.get('username')
@@ -436,22 +436,22 @@ async def post_admin_add_remove(request, current_user, action):
         async with app.configs['live'].db.id.acquire() as con:
             user = await con.fetchrow("SELECT * FROM users WHERE username = $1", username)
             if user is None and username.startswith("0x"):
-                user = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", username)
+                user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", username)
         if user is None:
             raise SanicException("User not found", status_code=400)
-        token_id = user['token_id']
+        toshi_id = user['toshi_id']
     else:
         SanicException("Bad Arguments", status_code=400)
 
     if action == 'add':
-        print('adding admin: {}'.format(token_id))
+        print('adding admin: {}'.format(toshi_id))
         async with app.pool.acquire() as con:
-            await con.execute("INSERT INTO admins VALUES ($1) ON CONFLICT DO NOTHING", token_id)
+            await con.execute("INSERT INTO admins VALUES ($1) ON CONFLICT DO NOTHING", toshi_id)
     elif action == 'remove':
-        print('removing admin: {}'.format(token_id))
+        print('removing admin: {}'.format(toshi_id))
         async with app.pool.acquire() as con:
-            await con.execute("DELETE FROM admins WHERE token_id = $1", token_id)
-            await con.execute("DELETE FROM sessions WHERE token_id = $1", token_id)
+            await con.execute("DELETE FROM admins WHERE toshi_id = $1", toshi_id)
+            await con.execute("DELETE FROM sessions WHERE toshi_id = $1", toshi_id)
     else:
         raise SanicException("Not Found", status_code=404)
 
@@ -482,8 +482,8 @@ async def get_txs(request, conf, user):
     txs = []
     for row in rows:
         tx = dict(row)
-        tx['from_user'] = await get_token_user_from_payment_address(conf, tx['from_address'])
-        tx['to_user'] = await get_token_user_from_payment_address(conf, tx['to_address'])
+        tx['from_user'] = await get_toshi_user_from_payment_address(conf, tx['from_address'])
+        tx['to_user'] = await get_toshi_user_from_payment_address(conf, tx['to_address'])
         txs.append(tx)
 
     total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
@@ -555,8 +555,8 @@ async def get_tx(request, conf, current_user, tx_hash):
         from_address = context['node']['from'] if 'node' in context else context['db']['from_address']
         to_address = context['node']['to'] if 'node' in context else context['db']['to_address']
 
-        context['from_user'] = await get_token_user_from_payment_address(conf, from_address)
-        context['to_user'] = await get_token_user_from_payment_address(conf, to_address)
+        context['from_user'] = await get_toshi_user_from_payment_address(conf, from_address)
+        context['to_user'] = await get_toshi_user_from_payment_address(conf, to_address)
 
     return html(await env.get_template("tx.html").render_async(**context))
 
@@ -655,12 +655,12 @@ async def get_users(request, conf, current_user):
         users=users, current_user=current_user, environment=conf.name, page="users",
         total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
 
-@app.route("/user/<token_id>", prefixed=True)
+@app.route("/user/<toshi_id>", prefixed=True)
 @requires_login
-async def get_user(request, conf, current_user, token_id):
+async def get_user(request, conf, current_user, toshi_id):
     async with conf.db.id.acquire() as con:
         row = await con.fetchrow(
-            "SELECT * FROM users WHERE token_id = $1", token_id)
+            "SELECT * FROM users WHERE toshi_id = $1", toshi_id)
     if not row:
         return html(await env.get_template("user.html").render_async(current_user=current_user, environment=conf.name, page="users"))
     usr = fix_avatar_for_user(conf.urls.id, dict(row))
@@ -693,29 +693,29 @@ async def get_user(request, conf, current_user, token_id):
     for txrow in txrows:
         tx = dict(txrow)
         if tx['from_address'] != usr['payment_address']:
-            tx['from_user'] = await get_token_user_from_payment_address(conf, tx['from_address'])
+            tx['from_user'] = await get_toshi_user_from_payment_address(conf, tx['from_address'])
         else:
             tx['from_user'] = usr
         if tx['to_address'] != usr['payment_address']:
-            tx['to_user'] = await get_token_user_from_payment_address(conf, tx['to_address'])
+            tx['to_user'] = await get_toshi_user_from_payment_address(conf, tx['to_address'])
         else:
             tx['to_user'] = usr
         txs.append(tx)
 
     async with conf.db.rep.acquire() as con:
         reviews_given_rows = await con.fetch(
-            "SELECT * FROM reviews WHERE reviewer_id = $1", token_id)
+            "SELECT * FROM reviews WHERE reviewer_id = $1", toshi_id)
         reviews_received_rows = await con.fetch(
-            "SELECT * FROM reviews WHERE reviewee_id = $1", token_id)
+            "SELECT * FROM reviews WHERE reviewee_id = $1", toshi_id)
     reviews_given = []
     reviews_received = []
     for review in reviews_given_rows:
         async with conf.db.id.acquire() as con:
-            reviewee = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewee_id'])
+            reviewee = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", review['reviewee_id'])
         if reviewee:
             reviewee = fix_avatar_for_user(conf.urls.id, dict(reviewee))
         else:
-            reviewee = fix_avatar_for_user(conf.urls.id, {'token_id': review['reviewee_id']})
+            reviewee = fix_avatar_for_user(conf.urls.id, {'toshi_id': review['reviewee_id']})
         reviews_given.append({
             'reviewee': reviewee,
             'rating': review['rating'],
@@ -724,11 +724,11 @@ async def get_user(request, conf, current_user, token_id):
         })
     for review in reviews_received_rows:
         async with conf.db.id.acquire() as con:
-            reviewer = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", review['reviewer_id'])
+            reviewer = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", review['reviewer_id'])
         if reviewer:
             reviewer = fix_avatar_for_user(conf.urls.id, dict(reviewer))
         else:
-            reviewer = fix_avatar_for_user(conf.urls.id, {'token_id': review['reviewer_id']})
+            reviewer = fix_avatar_for_user(conf.urls.id, {'toshi_id': review['reviewer_id']})
         reviews_received.append({
             'reviewer': reviewer,
             'rating': review['rating'],
@@ -738,17 +738,17 @@ async def get_user(request, conf, current_user, token_id):
 
     async with conf.db.id.acquire() as con:
         reports_given_rows = await con.fetch(
-            "SELECT users.token_id, users.username, users.avatar, reports.details "
+            "SELECT users.toshi_id, users.username, users.avatar, reports.details "
             "FROM reports JOIN users "
-            "ON reports.reportee_token_id = users.token_id "
-            "WHERE reports.reporter_token_id = $1",
-            token_id)
+            "ON reports.reportee_toshi_id = users.toshi_id "
+            "WHERE reports.reporter_toshi_id = $1",
+            toshi_id)
         reports_received_rows = await con.fetch(
-            "SELECT users.token_id, users.username, users.avatar, reports.details "
+            "SELECT users.toshi_id, users.username, users.avatar, reports.details "
             "FROM reports JOIN users "
-            "ON reports.reporter_token_id = users.token_id "
-            "WHERE reports.reportee_token_id = $1",
-            token_id)
+            "ON reports.reporter_toshi_id = users.toshi_id "
+            "WHERE reports.reportee_toshi_id = $1",
+            toshi_id)
     reports_given = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_given_rows]
     reports_received = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_received_rows]
 
@@ -757,7 +757,7 @@ async def get_user(request, conf, current_user, token_id):
             rows = await con.fetch(
                 "SELECT * FROM categories JOIN app_categories "
                 "ON categories.category_id = app_categories.category_id "
-                "WHERE token_id = $1", token_id)
+                "WHERE toshi_id = $1", toshi_id)
         categories = ", ".join([row['tag'] for row in rows])
         usr['categories'] = categories
 
@@ -858,36 +858,36 @@ async def get_apps(request, conf, current_user):
 @requires_login
 async def feature_app_handler_post(request, conf, current_user):
     print(request.form)
-    token_id = request.form.get('token_id')
+    toshi_id = request.form.get('toshi_id')
     featured = request.form.get('featured', False)
-    if token_id is not None:
+    if toshi_id is not None:
         async with conf.db.id.acquire() as con:
-            await con.execute("UPDATE users SET featured = $2 WHERE token_id = $1", token_id, True if featured else False)
+            await con.execute("UPDATE users SET featured = $2 WHERE toshi_id = $1", toshi_id, True if featured else False)
         if 'Referer' in request.headers:
             return redirect(request.headers['Referer'])
-        return redirect("/{}/user/{}".format(conf.name, token_id))
+        return redirect("/{}/user/{}".format(conf.name, toshi_id))
     return redirect("/{}/apps".format(conf.name))
 
 @app.route("/app/blocked", prefixed=True, methods=["POST"])
 @requires_login
 async def blocked_app_handler_post(request, conf, current_user):
-    token_id = request.form.get('token_id')
+    toshi_id = request.form.get('toshi_id')
     blocked = request.form.get('blocked', False)
-    if token_id is not None:
+    if toshi_id is not None:
         async with conf.db.id.acquire() as con:
             async with con.transaction():
-                await con.execute("UPDATE users SET blocked = $2 WHERE token_id = $1", token_id, True if blocked else False)
+                await con.execute("UPDATE users SET blocked = $2 WHERE toshi_id = $1", toshi_id, True if blocked else False)
         if 'Referer' in request.headers:
             return redirect(request.headers['Referer'])
-        return redirect("/{}/user/{}".format(conf.name, token_id))
+        return redirect("/{}/user/{}".format(conf.name, toshi_id))
     return redirect("/{}/apps".format(conf.name))
 
 @app.route("/app/categories", prefixed=True, methods=["POST"])
 @requires_login
 async def update_app_categories_handler(request, conf, current_user):
-    token_id = request.form.get('token_id')
+    toshi_id = request.form.get('toshi_id')
     categories = request.form.get('categories', "")
-    if token_id is not None:
+    if toshi_id is not None:
 
         tags = [s.strip() for s in categories.split(",")]
 
@@ -895,13 +895,13 @@ async def update_app_categories_handler(request, conf, current_user):
             categories = await con.fetch("SELECT * FROM categories WHERE tag = ANY($1)", tags)
             categories = [row['category_id'] for row in categories]
             async with con.transaction():
-                await con.execute("DELETE FROM app_categories WHERE token_id = $1", token_id)
+                await con.execute("DELETE FROM app_categories WHERE toshi_id = $1", toshi_id)
                 await con.executemany(
                     "INSERT INTO app_categories VALUES ($1, $2) ON CONFLICT DO NOTHING",
-                    [(category_id, token_id) for category_id in categories])
+                    [(category_id, toshi_id) for category_id in categories])
         if 'Referer' in request.headers:
             return redirect(request.headers['Referer'])
-        return redirect("/{}/user/{}".format(conf.name, token_id))
+        return redirect("/{}/user/{}".format(conf.name, toshi_id))
     return redirect("/{}/apps".format(conf.name))
 
 
@@ -927,8 +927,8 @@ async def get_reports(request, conf, current_user):
     reports = []
     for row in rows:
         async with conf.db.id.acquire() as con:
-            reporter = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", row['reporter_token_id'])
-            reportee = await con.fetchrow("SELECT * FROM users WHERE token_id = $1", row['reportee_token_id'])
+            reporter = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", row['reporter_toshi_id'])
+            reportee = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", row['reportee_toshi_id'])
 
         reporter = fix_avatar_for_user(conf.urls.id, dict(reporter))
         reportee = fix_avatar_for_user(conf.urls.id, dict(reportee))

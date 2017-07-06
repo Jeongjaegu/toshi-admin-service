@@ -18,7 +18,7 @@
 <table class="table table-hover">
   <thead>
     <tr>
-      <th><a class="" href="?{{ get_qargs(order_by='created') }}">Token Id</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='created') }}">Toshi Id</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='reputation_score') }}">Reputation</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='featured') }}">Featured</a></th>
@@ -29,9 +29,9 @@
     {% for app in apps %}
     <tr>
       <td>
-	<a href="/{{ environment }}/user/{{ app.token_id }}">
+	<a href="/{{ environment }}/user/{{ app.toshi_id }}">
 	  <img src="{{ app.avatar }}" width="30" height="30">
-	  {{ app.token_id }}
+	  {{ app.toshi_id }}
 	</a>
       </td>
       <td>
@@ -57,17 +57,17 @@
           no
 	{% endif %}
         {% if app.featured %}
-          <form id="remove_featured_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/featured">
-            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+          <form id="remove_featured_form_{{ app.toshi_id }}" method="POST" action="/{{ environment }}/app/featured">
+            <input type="hidden" name="toshi_id" value="{{ app.toshi_id }}">
             <input type="hidden" name="featured" value="">
           </form>
-          <a href="#" class="remove_featured" data-token-id="{{ app.token_id }}">(unfeature)</a>
+          <a href="#" class="remove_featured" data-toshi-id="{{ app.toshi_id }}">(unfeature)</a>
         {% else %}
-          <form id="set_featured_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/featured">
-            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+          <form id="set_featured_form_{{ app.toshi_id }}" method="POST" action="/{{ environment }}/app/featured">
+            <input type="hidden" name="toshi_id" value="{{ app.toshi_id }}">
             <input type="hidden" name="featured" value="true">
           </form>
-          <a href="#" class="set_featured" data-token-id="{{ app.token_id }}">(feature)</a>
+          <a href="#" class="set_featured" data-toshi-id="{{ app.toshi_id }}">(feature)</a>
         {% endif %}
       </td>
       <td>
@@ -77,17 +77,17 @@
           no
 	{% endif %}
         {% if app.blocked %}
-          <form id="remove_blocked_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
-            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+          <form id="remove_blocked_form_{{ app.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+            <input type="hidden" name="toshi_id" value="{{ app.toshi_id }}">
             <input type="hidden" name="blocked" value="">
           </form>
-          <a href="#" class="remove_blocked" data-token-id="{{ app.token_id }}">(unblock)</a>
+          <a href="#" class="remove_blocked" data-toshi-id="{{ app.toshi_id }}">(unblock)</a>
         {% else %}
-          <form id="set_blocked_form_{{ app.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
-            <input type="hidden" name="token_id" value="{{ app.token_id }}">
+          <form id="set_blocked_form_{{ app.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+            <input type="hidden" name="toshi_id" value="{{ app.toshi_id }}">
             <input type="hidden" name="blocked" value="true">
           </form>
-          <a href="#" class="set_blocked" data-token-id="{{ app.token_id }}">(block)</a>
+          <a href="#" class="set_blocked" data-toshi-id="{{ app.toshi_id }}">(block)</a>
         {% endif %}
       </td>
     </tr>

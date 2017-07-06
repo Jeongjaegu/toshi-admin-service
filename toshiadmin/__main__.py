@@ -1,5 +1,5 @@
 import os
-from tokenadmin.app import app
+from toshiadmin.app import app
 
 if __name__ == "__main__":
     port = os.getenv("PORT", 8000)

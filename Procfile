@@ -1,1 +1,1 @@
-web: bin/start-stunnel python -m tokenadmin
+web: bin/start-stunnel python -m toshiadmin

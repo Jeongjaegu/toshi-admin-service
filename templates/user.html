@@ -3,7 +3,7 @@
 {% if user %}
 <nav class="navbar navbar-toggleable-md navbar-light bg-faded">
   <a class="navbar-brand" href="#"><img src="{{ user.avatar }}" width="30" height="30"></a>
-  <a class="navbar-brand" href="#">{{ user.token_id }}</a>
+  <a class="navbar-brand" href="#">{{ user.toshi_id }}</a>
 </nav>
 <div class="container-fluid">
   <div class="row">
@@ -83,7 +83,7 @@
               {% if user.featured %}
                 <td>
                   <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
-                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
                     <input type="hidden" name="featured" value="">
                   </form>
                   <a href="#" class="remove_featured">(unfeature)</a>
@@ -91,7 +91,7 @@
               {% else %}
                 <td>
                   <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
-                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
                     <input type="hidden" name="featured" value="true">
                   </form>
                   <a href="#" class="set_featured">(feature)</a>
@@ -107,17 +107,17 @@
               </th>
               <td>
                 {% if user.blocked %}
-                  <form id="remove_blocked_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
-                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                  <form id="remove_blocked_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
                     <input type="hidden" name="blocked" value="">
                   </form>
-                  <a href="#" class="remove_blocked" data-token-id="{{ user.token_id }}">(unblock)</a>
+                  <a href="#" class="remove_blocked" data-toshi-id="{{ user.toshi_id }}">(unblock)</a>
                 {% else %}
-                  <form id="set_blocked_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/blocked">
-                    <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                  <form id="set_blocked_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
                     <input type="hidden" name="blocked" value="true">
                   </form>
-                  <a href="#" class="set_blocked" data-token-id="{{ user.token_id }}">(block)</a>
+                  <a href="#" class="set_blocked" data-toshi-id="{{ user.toshi_id }}">(block)</a>
                 {% endif %}
               </td>
             </tr>
@@ -126,8 +126,8 @@
                 Categories
               </td>
               <td>
-                <form id="set_categories_form_{{ user.token_id }}" method="POST" action="/{{ environment }}/app/categories">
-                  <input type="hidden" name="token_id" value="{{ user.token_id }}">
+                <form id="set_categories_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/categories">
+                  <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
                   <input type="text" name="categories" value="{{ user.categories }}">
                   <input type="submit" value="update">
                 </form>
@@ -177,9 +177,9 @@
           {% for review in reviews_received %}
             <tr>
               <td>
-                <a href="/{{ environment }}/user/{{ review.reviewer.token_id }}">
+                <a href="/{{ environment }}/user/{{ review.reviewer.toshi_id }}">
                   <img src="{{ review.reviewer.avatar }}" width="30" height="30">
-                  @{{ review.reviewer.username or review.reviewer.token_id }}
+                  @{{ review.reviewer.username or review.reviewer.toshi_id }}
                 </a>
               </td>
               <td>
@@ -211,9 +211,9 @@
           {% for review in reviews_given %}
             <tr>
               <td>
-                <a href="/{{ environment }}/user/{{ review.reviewee.token_id }}">
+                <a href="/{{ environment }}/user/{{ review.reviewee.toshi_id }}">
                   <img src="{{ review.reviewee.avatar }}" width="30" height="30">
-                  @{{ review.reviewee.username or review.reviewee.token_id }}
+                  @{{ review.reviewee.username or review.reviewee.toshi_id }}
                 </a>
               </td>
               <td>
@@ -244,9 +244,9 @@
           {% for report in reports_received %}
             <tr>
               <td>
-                <a href="/{{ environment }}/user/{{ report.token_id }}">
+                <a href="/{{ environment }}/user/{{ report.toshi_id }}">
                   <img src="{{ report.avatar }}" width="30" height="30">
-                  @{{ report.username or report.token_id }}
+                  @{{ report.username or report.toshi_id }}
                 </a>
               </td>
               <td>{{ report.details }}</td>
@@ -267,9 +267,9 @@
           {% for report in reports_given %}
             <tr>
               <td>
-                <a href="/{{ environment }}/user/{{ report.token_id }}">
+                <a href="/{{ environment }}/user/{{ report.toshi_id }}">
                   <img src="{{ report.avatar }}" width="30" height="30">
-                  @{{ report.username or report.token_id }}
+                  @{{ report.username or report.toshi_id }}
                 </a>
               </td>
               <td>{{ report.details }}</td>

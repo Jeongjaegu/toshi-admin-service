@@ -73,7 +73,7 @@ if [ -z $PORT ]; then
 fi
 export PGSQL_STUNNEL_ENABLED=1
 if [ -z $DATABASE_URL ]; then
-    export DATABASE_URL=postgresql://token:@127.0.0.1/token-admin
+    export DATABASE_URL=postgresql://toshi:@127.0.0.1/toshi-admin
 fi
 
 export STUNNEL_URLS="DEV_ETH_SERVICE_DATABASE_URL DEV_ID_SERVICE_DATABASE_URL DEV_DIR_SERVICE_DATABASE_URL DEV_REP_SERVICE_DATABASE_URL LIVE_ETH_SERVICE_DATABASE_URL LIVE_ID_SERVICE_DATABASE_URL LIVE_DIR_SERVICE_DATABASE_URL LIVE_REP_SERVICE_DATABASE_URL"
@@ -83,9 +83,9 @@ rm -rf /tmp/.s.PGSQL.*
 if [ $# -eq 0 ]; then
     # run the server
     if command -v entr >/dev/null 2>&1; then
-        env/bin/start-stunnel bash -c "find . -iname '*.py' | entr -r env/bin/python -m tokenadmin"
+        env/bin/start-stunnel bash -c "find . -iname '*.py' | entr -r env/bin/python -m toshiadmin"
     else
-        env/bin/start-stunnel bash -c "env/bin/python -m tokenadmin"
+        env/bin/start-stunnel bash -c "env/bin/python -m toshiadmin"
     fi
 else
     PYTHONPATH=. env/bin/start-stunnel env/bin/python $@

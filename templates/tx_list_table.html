@@ -3,24 +3,24 @@
   <td><a href="/{{ environment }}/tx/{{ tx.hash }}">{{ tx.hash|truncate(length=16) }}</a></td>
   <td>
     {% if tx.from_user %}
-    <a href="/{{ environment }}/user/{{ tx.from_user.token_id }}">
+    <a href="/{{ environment }}/user/{{ tx.from_user.toshi_id }}">
       <img src="{{ tx.from_user.avatar }}" width="30" height="30">
       @{{ tx.from_user.username }}
     </a>
     {% else %}
-    <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.from_address }}.png" width="30" height="30">
+    <img src="https://toshi-id-service.herokuapp.com/identicon/{{ tx.from_address }}.png" width="30" height="30">
     {{ tx.from_address|truncate(length=16) }}
     {% endif %}
   </td>
   <td>
     {% if tx.to_user %}
-      <a href="/{{ environment }}/user/{{ tx.to_user.token_id }}">
+      <a href="/{{ environment }}/user/{{ tx.to_user.toshi_id }}">
         <img src="{{ tx.to_user.avatar }}" width="30" height="30">
         @{{ tx.to_user.username }}
       </a>
     {% else %}
       {% if tx.to_address %}
-        <img src="https://token-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
+        <img src="https://toshi-id-service.herokuapp.com/identicon/{{ tx.to_address }}.png" width="30" height="30">
         {{ tx.to_address|truncate(length=16) }}
       {% else %}
         Contract Deployment
