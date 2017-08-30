@@ -88,7 +88,7 @@ async def prepare_configs(before_start, app, loop):
     # live
     live_eth = await create_pool(LIVE_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     live_id = await create_pool(LIVE_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    live_dir = await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    live_dir = None # await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     live_rep = await create_pool(LIVE_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     app.configs['live'] = Config("live", live_eth, live_id, live_dir, live_rep,
                                  LIVE_ETHEREUM_NODE_URL,
@@ -100,7 +100,7 @@ async def prepare_configs(before_start, app, loop):
     # dev
     dev_eth = await create_pool(DEV_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     dev_id = await create_pool(DEV_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    dev_dir = await create_pool(DEV_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    dev_dir = None # await create_pool(DEV_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     dev_rep = await create_pool(DEV_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
     app.configs['dev'] = Config("dev", dev_eth, dev_id, dev_dir, dev_rep,
                                 DEV_ETHEREUM_NODE_URL,
