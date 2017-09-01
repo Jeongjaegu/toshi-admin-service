@@ -35,7 +35,7 @@
       </nav>
       <nav class="navbar navbar-light navbar-toggleable-sm bg-faded justify-content-center">
 	<div class="navbar-collapse collapse">
-	  {% if environment == 'live' or environment == 'dev' %}
+	  {% if environment == 'mainnet' or environment == 'dev' or environment == 'internal' %}
 	    <ul class="navbar-nav mx-auto w-100">
 	      <li class="nav-item">
 	        <a class="nav-link{% if page == 'home' %} active{% endif %}" href="/{{ environment }}">Home</a>
@@ -61,10 +61,13 @@
 	  {% endif %}
 	  <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
 	    <li class="nav-item">
+	      <a class="nav-link{% if environment == 'internal' %} active{% endif %}" href="/internal{% if page != 'home' %}/{{ page }}{% endif %}">internal</a>
+	    </li>
+	    <li class="nav-item">
 	      <a class="nav-link{% if environment == 'dev' %} active{% endif %}" href="/dev{% if page != 'home' %}/{{ page }}{% endif %}">dev</a>
 	    </li>
 	    <li class="nav-item">
-	      <a class="nav-link{% if environment == 'live' %} active{% endif %}" href="/live{% if page != 'home' %}/{{ page }}{% endif %}">live</a>
+	      <a class="nav-link{% if environment == 'mainnet' %} active{% endif %}" href="/mainnet{% if page != 'home' %}/{{ page }}{% endif %}">mainnet</a>
 	    </li>
 	    <li class="nav-item">
 	      <a class="nav-link{% if environment == 'config' %} active{% endif %}" href="/config">config</a>

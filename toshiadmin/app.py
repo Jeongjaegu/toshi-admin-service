@@ -27,15 +27,15 @@ configure_logger(sanic_log)
 ADMIN_SERVICE_DATABASE_URL = os.getenv("DATABASE_URL")
 ID_SERVICE_LOGIN_URL = os.getenv("ID_SERVICE_LOGIN_URL")
 
-LIVE_ETHEREUM_NODE_URL = os.getenv("LIVE_ETHEREUM_NODE_URL")
-LIVE_ETH_SERVICE_DATABASE_URL = os.getenv("LIVE_ETH_SERVICE_DATABASE_URL")
-LIVE_ID_SERVICE_DATABASE_URL = os.getenv("LIVE_ID_SERVICE_DATABASE_URL")
-LIVE_DIR_SERVICE_DATABASE_URL = os.getenv("LIVE_DIR_SERVICE_DATABASE_URL")
-LIVE_REP_SERVICE_DATABASE_URL = os.getenv("LIVE_REP_SERVICE_DATABASE_URL")
-LIVE_ID_SERVICE_URL = os.getenv("LIVE_ID_SERVICE_URL")
-LIVE_ETH_SERVICE_URL = os.getenv("LIVE_ETH_SERVICE_URL")
-LIVE_DIR_SERVICE_URL = os.getenv("LIVE_DIR_SERVICE_URL")
-LIVE_REP_SERVICE_URL = os.getenv("LIVE_REP_SERVICE_URL")
+MAINNET_ETHEREUM_NODE_URL = os.getenv("MAINNET_ETHEREUM_NODE_URL")
+MAINNET_ETH_SERVICE_DATABASE_URL = os.getenv("MAINNET_ETH_SERVICE_DATABASE_URL")
+MAINNET_ID_SERVICE_DATABASE_URL = os.getenv("MAINNET_ID_SERVICE_DATABASE_URL")
+MAINNET_DIR_SERVICE_DATABASE_URL = os.getenv("MAINNET_DIR_SERVICE_DATABASE_URL")
+MAINNET_REP_SERVICE_DATABASE_URL = os.getenv("MAINNET_REP_SERVICE_DATABASE_URL")
+MAINNET_ID_SERVICE_URL = os.getenv("MAINNET_ID_SERVICE_URL")
+MAINNET_ETH_SERVICE_URL = os.getenv("MAINNET_ETH_SERVICE_URL")
+MAINNET_DIR_SERVICE_URL = os.getenv("MAINNET_DIR_SERVICE_URL")
+MAINNET_REP_SERVICE_URL = os.getenv("MAINNET_REP_SERVICE_URL")
 
 DEV_ETHEREUM_NODE_URL = os.getenv("DEV_ETHEREUM_NODE_URL")
 DEV_ETH_SERVICE_DATABASE_URL = os.getenv("DEV_ETH_SERVICE_DATABASE_URL")
@@ -46,6 +46,16 @@ DEV_ID_SERVICE_URL = os.getenv("DEV_ID_SERVICE_URL")
 DEV_ETH_SERVICE_URL = os.getenv("DEV_ETH_SERVICE_URL")
 DEV_DIR_SERVICE_URL = os.getenv("DEV_DIR_SERVICE_URL")
 DEV_REP_SERVICE_URL = os.getenv("DEV_REP_SERVICE_URL")
+
+INTERNAL_ETHEREUM_NODE_URL = os.getenv("INTERNAL_ETHEREUM_NODE_URL")
+INTERNAL_ETH_SERVICE_DATABASE_URL = os.getenv("INTERNAL_ETH_SERVICE_DATABASE_URL")
+INTERNAL_ID_SERVICE_DATABASE_URL = os.getenv("INTERNAL_ID_SERVICE_DATABASE_URL")
+INTERNAL_DIR_SERVICE_DATABASE_URL = os.getenv("INTERNAL_DIR_SERVICE_DATABASE_URL")
+INTERNAL_REP_SERVICE_DATABASE_URL = os.getenv("INTERNAL_REP_SERVICE_DATABASE_URL")
+INTERNAL_ID_SERVICE_URL = os.getenv("INTERNAL_ID_SERVICE_URL")
+INTERNAL_ETH_SERVICE_URL = os.getenv("INTERNAL_ETH_SERVICE_URL")
+INTERNAL_DIR_SERVICE_URL = os.getenv("INTERNAL_DIR_SERVICE_URL")
+INTERNAL_REP_SERVICE_URL = os.getenv("INTERNAL_REP_SERVICE_URL")
 
 SERVICE_CHECK_TIMEOUT = 2
 
@@ -72,10 +82,12 @@ class Config:
 
 def add_config(fn):
     async def wrapper(request, *args, **kwargs):
-        if request.path.startswith("/live"):
-            config = app.configs['live']
+        if request.path.startswith("/mainnet"):
+            config = app.configs['mainnet']
         elif request.path.startswith("/dev"):
             config = app.configs['dev']
+        elif request.path.startswith("/internal"):
+            config = app.configs['internal']
         else:
             raise SanicException("Not Found", status_code=404)
         return await fn(request, config, *args, **kwargs)
@@ -85,17 +97,18 @@ async def prepare_configs(before_start, app, loop):
     app.configs = {}
 
     app.pool = await prepare_database({'dsn': ADMIN_SERVICE_DATABASE_URL})
-    # live
-    live_eth = await create_pool(LIVE_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    live_id = await create_pool(LIVE_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    live_dir = None # await create_pool(LIVE_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    live_rep = await create_pool(LIVE_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
-    app.configs['live'] = Config("live", live_eth, live_id, live_dir, live_rep,
-                                 LIVE_ETHEREUM_NODE_URL,
-                                 LIVE_ID_SERVICE_URL,
-                                 LIVE_ETH_SERVICE_URL,
-                                 LIVE_DIR_SERVICE_URL,
-                                 LIVE_REP_SERVICE_URL)
+
+    # mainnet
+    mainnet_eth = await create_pool(MAINNET_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    mainnet_id = await create_pool(MAINNET_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    mainnet_dir = None # await create_pool(MAINNET_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    mainnet_rep = await create_pool(MAINNET_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    app.configs['mainnet'] = Config("mainnet", mainnet_eth, mainnet_id, mainnet_dir, mainnet_rep,
+                                    MAINNET_ETHEREUM_NODE_URL,
+                                    MAINNET_ID_SERVICE_URL,
+                                    MAINNET_ETH_SERVICE_URL,
+                                    MAINNET_DIR_SERVICE_URL,
+                                    MAINNET_REP_SERVICE_URL)
 
     # dev
     dev_eth = await create_pool(DEV_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
@@ -108,6 +121,18 @@ async def prepare_configs(before_start, app, loop):
                                 DEV_ETH_SERVICE_URL,
                                 DEV_DIR_SERVICE_URL,
                                 DEV_REP_SERVICE_URL)
+
+    # internal
+    internal_eth = await create_pool(INTERNAL_ETH_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    internal_id = await create_pool(INTERNAL_ID_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    internal_dir = None # await create_pool(INTERNAL_DIR_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    internal_rep = await create_pool(INTERNAL_REP_SERVICE_DATABASE_URL, min_size=1, max_size=3)
+    app.configs['internal'] = Config("internal", internal_eth, internal_id, internal_dir, internal_rep,
+                                     INTERNAL_ETHEREUM_NODE_URL,
+                                     INTERNAL_ID_SERVICE_URL,
+                                     INTERNAL_ETH_SERVICE_URL,
+                                     INTERNAL_DIR_SERVICE_URL,
+                                     INTERNAL_REP_SERVICE_URL)
 
     # configure http client
     app.http = aiohttp.ClientSession()
@@ -129,13 +154,17 @@ class App(Sanic):
             def response(handler):
                 handler_name = getattr(handler, '__name__', '')
                 handler = add_config(handler)
-                lh = functools.partial(handler)
-                lh.__name__ = '{}_live'.format(handler_name)
+                mh = functools.partial(handler)
+                mh.__name__ = '{}_mainnet'.format(handler_name)
                 dh = functools.partial(handler)
                 dh.__name__ = '{}_dev'.format(handler_name)
-                self.router.add(uri="/live{}".format(uri), methods=methods, handler=lh,
+                ih = functools.partial(handler)
+                ih.__name__ = '{}_internal'.format(handler_name)
+                self.router.add(uri="/mainnet{}".format(uri), methods=methods, handler=mh,
                                 host=host)
                 self.router.add(uri="/dev{}".format(uri), methods=methods, handler=dh,
+                                host=host)
+                self.router.add(uri="/internal{}".format(uri), methods=methods, handler=ih,
                                 host=host)
             return response
         else:
@@ -246,7 +275,7 @@ def requires_login(fn):
 @app.route("/")
 @requires_login
 async def index(request, user):
-    return redirect("/live")
+    return redirect("/mainnet")
 
 @app.route("/", prefixed=True)
 @requires_login
@@ -409,11 +438,11 @@ async def get_config_home(request, current_user):
         admins = await con.fetch("SELECT * FROM admins")
     users = []
     for admin in admins:
-        async with app.configs['live'].db.id.acquire() as con:
+        async with app.configs['dev'].db.id.acquire() as con:
             user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", admin['toshi_id'])
         if user is None:
             user = {'toshi_id': admin['toshi_id']}
-        users.append(fix_avatar_for_user(app.configs['live'].urls.id, dict(user)))
+        users.append(fix_avatar_for_user(app.configs['dev'].urls.id, dict(user)))
     return html(await env.get_template("config.html").render_async(
         admins=users,
         current_user=current_user, environment='config', page="home"))
@@ -433,7 +462,7 @@ async def post_admin_add_remove(request, current_user, action):
             username = username[1:]
             if not username:
                 raise SanicException("Bad Arguments", status_code=400)
-        async with app.configs['live'].db.id.acquire() as con:
+        async with app.configs['dev'].db.id.acquire() as con:
             user = await con.fetchrow("SELECT * FROM users WHERE username = $1", username)
             if user is None and username.startswith("0x"):
                 user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", username)
