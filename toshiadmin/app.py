@@ -6,6 +6,7 @@ import string
 import logging
 import os
 import functools
+import re
 from urllib.parse import urlencode, urlunparse
 
 from toshi.database import prepare_database, create_pool
@@ -15,9 +16,12 @@ from asyncpg.exceptions import UniqueViolationError
 from sanic import Sanic
 from sanic.exceptions import SanicException
 from sanic.log import log as sanic_log
+from sanic.config import Config
 from sanic.response import html, json as json_response, redirect
 from sanic.request import Request
 from jinja2 import Environment, FileSystemLoader
+
+Config.REQUEST_TIMEOUT = 300
 
 from toshi.utils import parse_int
 
@@ -1061,3 +1065,54 @@ async def update_categories(request, conf, current_user):
     return html(await env.get_template("categories.html").render_async(
         categories=rows, error=error,
         current_user=current_user, environment=conf.name, page="categories"))
+
+
+@app.route("/migrate", methods=["POST"])
+@requires_login
+async def update_categories(request, current_user):
+
+    from_env = request.form.get('from', None)
+    to_env = request.form.get('to', None)
+    toshi_ids = request.form.get('toshi_ids', None)
+    apps = request.form.get('apps', None)
+
+    toshi_ids = set(re.findall("0x[a-fA-f0-9]{40}", toshi_ids))
+
+    print("MIGRATING USERS FROM '{}' TO '{}'".format(from_env, to_env))
+
+    async with app.configs[from_env].db.id.acquire() as con:
+        if apps == 'on':
+            users = await con.fetch("SELECT * FROM users WHERE is_app = TRUE")
+            user_rows = list(users)
+        else:
+            user_rows = []
+        if len(toshi_ids) > 0:
+            users = await con.fetch("SELECT * FROM users WHERE toshi_id = ANY($1)", toshi_ids)
+            user_rows.extend(list(users))
+        for row in user_rows:
+            toshi_ids.add(row['toshi_id'])
+        avatar_rows = await con.fetch("SELECT * FROM avatars WHERE toshi_id = ANY($1)", toshi_ids)
+        users = []
+        avatars = []
+        for row in user_rows:
+            users.append((row['toshi_id'], row['payment_address'], row['created'], row['updated'], row['username'], row['name'], row['avatar'], row['about'], row['location'], row['is_public'], row['went_public'], row['is_app'], row['featured']))
+        for row in avatar_rows:
+            avatars.append((row['toshi_id'], row['img'], row['hash'], row['format'], row['last_modified']))
+
+    async with app.configs[to_env].db.id.acquire() as con:
+        rval = await con.executemany(
+            "INSERT INTO users ("
+            "toshi_id, payment_address, created, updated, username, name, avatar, about, location, is_public, went_public, is_app, featured"
+            ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) "
+            "ON CONFLICT DO NOTHING",
+            users)
+        print("MIGRATED USERS: {} (of {})".format(rval, len(toshi_ids)))
+        rval = await con.executemany(
+            "INSERT INTO avatars ("
+            "toshi_id, img, hash, format, last_modified"
+            ") VALUES ($1, $2, $3, $4, $5) "
+            "ON CONFLICT DO NOTHING",
+            avatars)
+        print("MIGRATED AVATARS: {} (of {})".format(rval, len(avatars)))
+
+    return redirect(request.headers['Referer'] or "/config")

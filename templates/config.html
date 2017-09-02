@@ -43,6 +43,32 @@
       {% endfor %}
     </tbody>
   </table>
+  <p>
+    <h3>Migrate users</h3>
+    <form method="POST" action="/migrate">
+      <label for="from">From:
+        <select name="from">
+          <option value="internal">Internal</option>
+          <option value="dev">Development</option>
+          <option value="mainnet">Mainnet</option>
+        </select>
+      </label>
+      <label for="to">To:
+        <select name="to">
+          <option value="internal">Internal</option>
+          <option value="dev">Development</option>
+          <option value="mainnet">Mainnet</option>
+        </select>
+      </label><br/>
+      <label for="apps">migrate all apps:
+        <input name="apps" type="checkbox">
+      </label><br/>
+      <label for="toshi_ids">Toshi_ids:
+        <textarea name="toshi_ids" rows="20" cols="80"></textarea>
+      </label><br/>
+      <input type="submit" value="migrate">
+    </form>
+  </p>
 {% endblock %}
 {% block script %}
   <script src="/public/config.js"></script>
