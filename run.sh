@@ -30,38 +30,55 @@ if [ ! -e .runconfig ]; then
 
     # pull down config details from heroku
     echo "export ID_SERVICE_LOGIN_URL=https://token-id-service.herokuapp.com" > .runconfig
-    echo -n "export LIVE_ID_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-id-service >> .runconfig
-    echo -n "export LIVE_ETH_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-eth-service >> .runconfig
-    echo -n "export LIVE_DIR_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-dir-service >> .runconfig
-    echo -n "export LIVE_REP_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-rep-service >> .runconfig
+
+    echo -n "export MAINNET_ID_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a toshi-id-service >> .runconfig
+    echo -n "export MAINNET_ETH_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a toshi-eth-service >> .runconfig
+    echo -n "export MAINNET_DIR_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a toshi-directory-service >> .runconfig
+    echo -n "export MAINNET_REP_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a toshi-reputation-service >> .runconfig
 
     echo -n "export DEV_ID_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-id-service-development >> .runconfig
+    heroku config:get DATABASE_URL -a token-id-service >> .runconfig
     echo -n "export DEV_ETH_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-eth-service-development >> .runconfig
+    heroku config:get DATABASE_URL -a token-eth-service >> .runconfig
     echo -n "export DEV_DIR_SERVICE_DATABASE_URL=" >> .runconfig
-    heroku config:get DATABASE_URL -a token-dir-service-development >> .runconfig
+    heroku config:get DATABASE_URL -a token-dir-service >> .runconfig
     echo -n "export DEV_REP_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a token-rep-service >> .runconfig
+
+    echo -n "export INTERNAL_ID_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a token-id-service-development >> .runconfig
+    echo -n "export INTERNAL_ETH_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a token-eth-service-development >> .runconfig
+    echo -n "export INTERNAL_DIR_SERVICE_DATABASE_URL=" >> .runconfig
+    heroku config:get DATABASE_URL -a token-dir-service-development >> .runconfig
+    echo -n "export INTERNAL_REP_SERVICE_DATABASE_URL=" >> .runconfig
     heroku config:get DATABASE_URL -a token-rep-service-development >> .runconfig
 
-    echo -n "export LIVE_ETHEREUM_NODE_URL=" >> .runconfig
-    heroku config:get ETHEREUM_NODE_URL -a token-eth-service >> .runconfig
+    echo -n "export MAINNET_ETHEREUM_NODE_URL=" >> .runconfig
+    heroku config:get ETHEREUM_NODE_URL -a toshi-eth-service >> .runconfig
     echo -n "export DEV_ETHEREUM_NODE_URL=" >> .runconfig
+    heroku config:get ETHEREUM_NODE_URL -a token-eth-service >> .runconfig
+    echo -n "export INTERNAL_ETHEREUM_NODE_URL=" >> .runconfig
     heroku config:get ETHEREUM_NODE_URL -a token-eth-service-development >> .runconfig
 
-    echo "export DEV_ID_SERVICE_URL=https://token-id-service-development.herokuapp.com" >> .runconfig
-    echo "export DEV_ETH_SERVICE_URL=https://token-eth-service-development.herokuapp.com" >> .runconfig
-    echo "export DEV_DIR_SERVICE_URL=https://token-dir-service-development.herokuapp.com" >> .runconfig
-    echo "export DEV_REP_SERVICE_URL=https://token-rep-service-development.herokuapp.com" >> .runconfig
+    echo "export MAINNET_ID_SERVICE_URL=https://toshi-id-service.herokuapp.com" >> .runconfig
+    echo "export MAINNET_ETH_SERVICE_URL=https://toshi-eth-service.herokuapp.com" >> .runconfig
+    echo "export MAINNET_DIR_SERVICE_URL=https://toshi-dir-service.herokuapp.com" >> .runconfig
+    echo "export MAINNET_REP_SERVICE_URL=https://toshi-rep-service.herokuapp.com" >> .runconfig
 
-    echo "export LIVE_ID_SERVICE_URL=https://token-id-service.herokuapp.com" >> .runconfig
-    echo "export LIVE_ETH_SERVICE_URL=https://token-eth-service.herokuapp.com" >> .runconfig
-    echo "export LIVE_DIR_SERVICE_URL=https://token-dir-service.herokuapp.com" >> .runconfig
-    echo "export LIVE_REP_SERVICE_URL=https://token-rep-service.herokuapp.com" >> .runconfig
+    echo "export INTERNAL_ID_SERVICE_URL=https://token-id-service-development.herokuapp.com" >> .runconfig
+    echo "export INTERNAL_ETH_SERVICE_URL=https://token-eth-service-development.herokuapp.com" >> .runconfig
+    echo "export INTERNAL_DIR_SERVICE_URL=https://token-dir-service-development.herokuapp.com" >> .runconfig
+    echo "export INTERNAL_REP_SERVICE_URL=https://token-rep-service-development.herokuapp.com" >> .runconfig
+
+    echo "export DEV_ID_SERVICE_URL=https://token-id-service.herokuapp.com" >> .runconfig
+    echo "export DEV_ETH_SERVICE_URL=https://token-eth-service.herokuapp.com" >> .runconfig
+    echo "export DEV_DIR_SERVICE_URL=https://token-dir-service.herokuapp.com" >> .runconfig
+    echo "export DEV_REP_SERVICE_URL=https://token-rep-service.herokuapp.com" >> .runconfig
 
     echo "done"
 fi
@@ -76,7 +93,7 @@ if [ -z $DATABASE_URL ]; then
     export DATABASE_URL=postgresql://toshi:@127.0.0.1/toshi-admin
 fi
 
-export STUNNEL_URLS="DEV_ETH_SERVICE_DATABASE_URL DEV_ID_SERVICE_DATABASE_URL DEV_DIR_SERVICE_DATABASE_URL DEV_REP_SERVICE_DATABASE_URL LIVE_ETH_SERVICE_DATABASE_URL LIVE_ID_SERVICE_DATABASE_URL LIVE_DIR_SERVICE_DATABASE_URL LIVE_REP_SERVICE_DATABASE_URL"
+export STUNNEL_URLS="INTERNAL_ETH_SERVICE_DATABASE_URL INTERNAL_ID_SERVICE_DATABASE_URL INTERNAL_DIR_SERVICE_DATABASE_URL INTERNAL_REP_SERVICE_DATABASE_URL DEV_ETH_SERVICE_DATABASE_URL DEV_ID_SERVICE_DATABASE_URL DEV_DIR_SERVICE_DATABASE_URL DEV_REP_SERVICE_DATABASE_URL MAINNET_ETH_SERVICE_DATABASE_URL MAINNET_ID_SERVICE_DATABASE_URL MAINNET_DIR_SERVICE_DATABASE_URL MAINNET_REP_SERVICE_DATABASE_URL"
 
 #export STUNNEL_LOGLEVEL="debug"
 rm -rf /tmp/.s.PGSQL.*
