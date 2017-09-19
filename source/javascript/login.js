@@ -1,7 +1,7 @@
 import qrImage from 'qr-image';
 import http from './http.js';
 
-const id_service_url = "https://token-id-service.herokuapp.com";
+const id_service_url = "https://toshi-id-service.herokuapp.com";
 
 // TODO docs on how to use as image
 const getQRDataURI = (data) => {

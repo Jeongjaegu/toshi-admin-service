@@ -442,11 +442,11 @@ async def get_config_home(request, current_user):
         admins = await con.fetch("SELECT * FROM admins")
     users = []
     for admin in admins:
-        async with app.configs['dev'].db.id.acquire() as con:
+        async with app.configs['mainnet'].db.id.acquire() as con:
             user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", admin['toshi_id'])
         if user is None:
             user = {'toshi_id': admin['toshi_id']}
-        users.append(fix_avatar_for_user(app.configs['dev'].urls.id, dict(user)))
+        users.append(fix_avatar_for_user(app.configs['mainnet'].urls.id, dict(user)))
     return html(await env.get_template("config.html").render_async(
         admins=users,
         current_user=current_user, environment='config', page="home"))
@@ -466,7 +466,7 @@ async def post_admin_add_remove(request, current_user, action):
             username = username[1:]
             if not username:
                 raise SanicException("Bad Arguments", status_code=400)
-        async with app.configs['dev'].db.id.acquire() as con:
+        async with app.configs['mainnet'].db.id.acquire() as con:
             user = await con.fetchrow("SELECT * FROM users WHERE username = $1", username)
             if user is None and username.startswith("0x"):
                 user = await con.fetchrow("SELECT * FROM users WHERE toshi_id = $1", username)
