@@ -500,12 +500,14 @@ async def get_txs(request, conf, user):
         page = 1
     limit = 10
     offset = (page - 1) * limit
-    where_clause = ''
+    where_clause = 'WHERE v IS NOT NULL'
     filters = [f for f in request.args.getlist('filter', []) if f in ['confirmed', 'unconfirmed', 'error']]
     if filters:
-        where_clause = "WHERE " + " OR ".join("status = '{}'".format(f) for f in filters)
+        where_clause += " AND (" + " OR ".join("status = '{}'".format(f) for f in filters)
         if 'unconfirmed' in filters:
             where_clause += " OR status IS NULL"
+        where_clause += ")"
+
     async with conf.db.eth.acquire() as con:
         rows = await con.fetch(
             "SELECT * FROM transactions {} ORDER BY created DESC OFFSET $1 LIMIT $2".format(where_clause),
