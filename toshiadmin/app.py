@@ -723,7 +723,7 @@ async def get_user(request, conf, current_user, toshi_id):
     async with conf.db.eth.acquire() as con:
         txrows = await con.fetch(
             "SELECT * FROM transactions WHERE from_address = $3 OR to_address = $3 ORDER BY created DESC OFFSET $1 LIMIT $2",
-            0, 10, usr['payment_address'])
+            0, 100, usr['payment_address'])
     txs = []
     for txrow in txrows:
         tx = dict(txrow)
