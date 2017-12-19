@@ -7,6 +7,8 @@ import logging
 import os
 import functools
 import re
+import math
+import time
 from urllib.parse import urlencode, urlunparse
 
 from toshi.database import prepare_database, create_pool
@@ -21,7 +23,9 @@ from sanic.response import html, json as json_response, redirect
 from sanic.request import Request
 from jinja2 import Environment, FileSystemLoader
 
-Config.REQUEST_TIMEOUT = 300
+from toshiadmin.utils import process_image
+
+Config.REQUEST_TIMEOUT = 600
 
 from toshi.utils import parse_int
 
@@ -889,6 +893,114 @@ async def get_apps(request, conf, current_user):
         apps=apps, current_user=current_user, environment=conf.name, page="apps",
         total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
 
+sortable_dapps_columns = ['created', 'name']
+sortable_dapps_columns.extend(['-{}'.format(col) for col in sortable_apps_columns])
+# specify which columns should be sorted in descending order by default
+negative_dapps_columns = []
+
+@app.route("/dapps", prefixed=True, methods=["GET"])
+@requires_login
+async def get_dapps(request, conf, current_user):
+    page = parse_int(request.args.get('page', None)) or 1
+    if page < 1:
+        page = 1
+    limit = 10
+    offset = (page - 1) * limit
+    order_by = request.args.get('order_by', None)
+    search_query = request.args.get('query', None)
+    filter_by = request.args.get('filter', None)
+    order = ('created', 'DESC')
+    if order_by:
+        if order_by in sortable_dapps_columns:
+            if order_by[0] == '-':
+                order = (order_by[1:], 'ASC' if order_by[1:] in negative_dapps_columns else 'DESC')
+            else:
+                order = (order_by, 'DESC' if order_by in negative_dapps_columns else 'ASC')
+
+    async with conf.db.id.acquire() as con:
+        rows = await con.fetch(
+            "SELECT * FROM dapps ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+            offset, limit)
+        count = await con.fetchrow(
+            "SELECT COUNT(*) FROM dapps")
+
+    dapps = []
+    for row in rows:
+        dapp = fix_avatar_for_user(conf.urls.id, dict(row))
+        dapps.append(dapp)
+
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
+
+    def get_qargs(page=page, order_by=order_by, query=search_query, filter=filter_by, as_list=False, as_dict=False):
+        qargs = {'page': page}
+        if order_by:
+            if order_by[0] == '+':
+                order_by = order_by[1:]
+            elif order_by[0] != '-':
+                # toggle sort order
+                print(order, order_by)
+                if order[0] == order_by and order[1] == ('ASC' if order_by in negative_dapps_columns else 'DESC'):
+                    order_by = '-{}'.format(order_by)
+            qargs['order_by'] = order_by
+        if query:
+            qargs['query'] = query
+        if filter:
+            qargs['filter'] = filter
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
+        return urlencode(qargs)
+
+    return html(await env.get_template("dapps.html").render_async(
+        dapps=dapps, current_user=current_user, environment=conf.name, page="dapps",
+        total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
+
+@app.route("/dapp", prefixed=True, methods=["POST"])
+@requires_login
+async def create_dapp(request, conf, current_user):
+    name = request.form.get('name')
+    url = request.form.get('url')
+    description = request.form.get('description')
+
+    avatar = request.files.get('avatar')
+
+    async with conf.db.id.acquire() as con:
+        seq = await con.fetchrow("SELECT COUNT(*) FROM dapps")
+    seq = seq['count'] + 1
+
+    dapp_id = (math.floor(time.time()) * 1000) - 1314220021721
+    dapp_id = dapp_id << 23
+    dapp_id = dapp_id | 1024
+    dapp_id = dapp_id | seq
+
+    toshi_id = "0x{:040x}".format(dapp_id)
+    data, cache_hash, format = process_image(avatar.body, avatar.type)
+
+    async with conf.db.id.acquire() as con:
+        await con.execute("INSERT INTO avatars (toshi_id, img, hash, format) VALUES ($1, $2, $3, $4) "
+                          "ON CONFLICT (toshi_id, hash) DO UPDATE "
+                          "SET img = EXCLUDED.img, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
+                          toshi_id, data, cache_hash, format)
+        avatar_url = "/avatar/{}_{}.{}".format(toshi_id, cache_hash[:6], 'jpg' if format == 'JPEG' else 'png')
+        await con.execute("INSERT INTO dapps (dapp_id, name, url, description, avatar) "
+                          "VALUES ($1, $2, $3, $4, $5) ",
+                          dapp_id, name, url, description, avatar_url)
+
+    if 'Referer' in request.headers:
+        return redirect(request.headers['Referer'])
+    return redirect("/{}/dapps".format(conf.name))
+
+@app.route("/dapp/<dapp_id>/delete", prefixed=True, methods=["POST"])
+@requires_login
+async def delete_dapp(request, conf, current_user, dapp_id):
+    async with conf.db.id.acquire() as con:
+        await con.execute("DELETE FROM dapps WHERE dapp_id = $1", int(dapp_id))
+
+    if 'Referer' in request.headers:
+        return redirect(request.headers['Referer'])
+    return redirect("/{}/dapps".format(conf.name))
+
 @app.route("/app/featured", prefixed=True, methods=["POST"])
 @requires_login
 async def feature_app_handler_post(request, conf, current_user):
@@ -1076,8 +1188,11 @@ async def migrate_users(request, current_user):
     from_env = request.form.get('from', None)
     to_env = request.form.get('to', None)
     toshi_ids = request.form.get('toshi_ids', None)
-    apps = request.form.get('apps', None)
-    users = request.form.get('users', None)
+    apps_flag = request.form.get('apps', None)
+    users_flag = request.form.get('users', None)
+
+    limit = 1000
+    offset = 1000 * 1
 
     if toshi_ids:
         toshi_ids = set(re.findall("0x[a-fA-f0-9]{40}", toshi_ids))
@@ -1087,13 +1202,15 @@ async def migrate_users(request, current_user):
     print("MIGRATING USERS FROM '{}' TO '{}'".format(from_env, to_env))
 
     async with app.configs[from_env].db.id.acquire() as con:
-        if apps == 'on':
+        if apps_flag == 'on':
             users = await con.fetch("SELECT * FROM users WHERE is_app = TRUE")
+            print("APPS", len(users))
             user_rows = list(users)
         else:
             user_rows = []
-        if users == 'on':
-            users = await con.fetch("SELECT * FROM users WHERE is_app = FALSE")
+        if users_flag == 'on':
+            users = await con.fetch("SELECT * FROM users WHERE is_app = FALSE OFFSET $1 LIMIT $2", offset, limit)
+            print("USERS", len(users))
             user_rows.extend(list(users))
         if len(toshi_ids) > 0:
             users = await con.fetch("SELECT * FROM users WHERE toshi_id = ANY($1)", toshi_ids)
@@ -1107,6 +1224,8 @@ async def migrate_users(request, current_user):
             users.append((row['toshi_id'], row['payment_address'], row['created'], row['updated'], row['username'], row['name'], row['avatar'], row['about'], row['location'], row['is_public'], row['went_public'], row['is_app'], row['featured']))
         for row in avatar_rows:
             avatars.append((row['toshi_id'], row['img'], row['hash'], row['format'], row['last_modified']))
+
+    print("INSERTING {} USERS".format(len(toshi_ids)))
 
     async with app.configs[to_env].db.id.acquire() as con:
         rval = await con.executemany(
