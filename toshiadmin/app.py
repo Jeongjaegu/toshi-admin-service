@@ -991,6 +991,93 @@ async def create_dapp(request, conf, current_user):
         return redirect(request.headers['Referer'])
     return redirect("/{}/dapps".format(conf.name))
 
+sortable_tokens_columns = ['symbol', 'name', 'address']
+sortable_tokens_columns.extend(['-{}'.format(col) for col in sortable_tokens_columns])
+# specify which columns should be sorted in descending order by default
+negative_tokens_columns = []
+
+@app.route("/tokens", prefixed=True, methods=["GET"])
+@requires_login
+async def get_tokens(request, conf, current_user):
+    page = parse_int(request.args.get('page', None)) or 1
+    if page < 1:
+        page = 1
+    limit = 10
+    offset = (page - 1) * limit
+    order_by = request.args.get('order_by', None)
+    search_query = request.args.get('query', None)
+    filter_by = request.args.get('filter', None)
+    order = ('name', 'ASC')
+    if order_by:
+        if order_by in sortable_tokens_columns:
+            if order_by[0] == '-':
+                order = (order_by[1:], 'ASC' if order_by[1:] in negative_tokens_columns else 'DESC')
+            else:
+                order = (order_by, 'DESC' if order_by in negative_tokens_columns else 'ASC')
+
+    async with conf.db.eth.acquire() as con:
+        rows = await con.fetch(
+            "SELECT symbol, name, address, decimals FROM tokens ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+            offset, limit)
+        count = await con.fetchrow(
+            "SELECT COUNT(*) FROM tokens")
+
+    tokens = []
+    for row in rows:
+        token = dict(row)
+        token['icon'] = "{}/token/{}.png".format(conf.urls.eth, token['symbol'])
+        tokens.append(token)
+
+    total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
+
+    def get_qargs(page=page, order_by=order_by, query=search_query, filter=filter_by, as_list=False, as_dict=False):
+        qargs = {'page': page}
+        if order_by:
+            if order_by[0] == '+':
+                order_by = order_by[1:]
+            elif order_by[0] != '-':
+                # toggle sort order
+                print(order, order_by)
+                if order[0] == order_by and order[1] == ('ASC' if order_by in negative_dapps_columns else 'DESC'):
+                    order_by = '-{}'.format(order_by)
+            qargs['order_by'] = order_by
+        if query:
+            qargs['query'] = query
+        if filter:
+            qargs['filter'] = filter
+        if as_dict:
+            return qargs
+        if as_list:
+            return qargs.items()
+        return urlencode(qargs)
+
+    return html(await env.get_template("tokens.html").render_async(
+        tokens=tokens, current_user=current_user, environment=conf.name, page="tokens",
+        total=count['count'], total_pages=total_pages, current_page=page, get_qargs=get_qargs))
+
+@app.route("/token", prefixed=True, methods=["POST"])
+@requires_login
+async def create_token(request, conf, current_user):
+    symbol = request.form.get('symbol')
+    name = request.form.get('name')
+    contract_address = request.form.get('contract_address')
+    decimals = int(request.form.get('decimals'))
+
+    icon = request.files.get('icon')
+
+    data, cache_hash, format = process_image(icon.body, icon.type)
+
+    async with conf.db.eth.acquire() as con:
+        await con.execute("INSERT INTO tokens (address, symbol, name, decimals, icon, hash, format) VALUES ($1, $2, $3, $4, $5, $6, $7) "
+                          "ON CONFLICT (address) DO UPDATE "
+                          "SET symbol = EXCLUDED.symbol, name = EXCLUDED.name, decimals = EXCLUDED.decimals, icon = EXCLUDED.icon, hash = EXCLUDED.hash, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
+                          contract_address, symbol, name, decimals, data, cache_hash, format.lower())
+
+    if 'Referer' in request.headers:
+        return redirect(request.headers['Referer'])
+    return redirect("/{}/tokens".format(conf.name))
+
+
 @app.route("/dapp/<dapp_id>/delete", prefixed=True, methods=["POST"])
 @requires_login
 async def delete_dapp(request, conf, current_user, dapp_id):

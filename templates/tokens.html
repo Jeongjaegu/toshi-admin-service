@@ -1,0 +1,77 @@
+{% extends "index.html" %}
+{% block body %}
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#">Apps ({{ total }})</a>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+    </ul>
+  </div>
+</nav>
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th><a class="" href="?{{ get_qargs(order_by='address') }}">Contract Address</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='symbol') }}">Symbol</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for token in tokens %}
+    <tr>
+      <td>
+	<img src="{{ token.icon }}" width="30" height="30">
+	{{ token.address }}
+      </td>
+      <td>
+	{{ token.symbol }}
+      </td>
+      <td>
+        {{ token.name }}
+      </td>
+      <td>
+        <form id="delete_token_form_{{ token.contract_address }}" method="POST" action="/{{ environment }}/token/{{ token.contract_address }}/delete">
+          <input type="submit" value="delete"></input>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  <tr>
+    <form id="add_new_token" method="POST" action="/{{ environment }}/token" enctype="multipart/form-data">
+      <td>Add new</td>
+      <td><input placeholder="symbol..." name="symbol"></input></td>
+      <td><input placeholder="name..." name="name"></input></td>
+      <td><input placeholder="0x..." name="contract_address"></input></td>
+      <td><input placeholder="..." name="decimals"></input></td>
+      <td>avatar: <input type="file" name="icon" accept="image/*"></input></td>
+      <td><input type="submit" value="save"></input></td>
+    </form>
+  </tbody>
+</table>
+<nav>
+  <ul class="pagination justify-content-center">
+    <li class="page-item{% if current_page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/tokens?{{ get_qargs(page=1) }}">First</a>
+    </li>
+    <li class="page-item{% if current_page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/tokens?{{ get_qargs(page=current_page - 1) }}">Previous</a>
+    </li>
+    {% for page_num in range(1, total_pages + 1) %}
+    {% if page_num < current_page - 5 and page_num + 10 < total_pages %}
+    {% elif page_num > current_page + 5 and page_num - 10 > 1 %}
+    {% else %}
+      <li class="page-item{% if page_num == current_page %} active{% endif %}">
+	<a class="page-link" href="/{{ environment }}/tokens?{{ get_qargs(page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% endif %}
+    {% endfor %}
+    <li class="page-item{% if current_page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/tokens?{{ get_qargs(page=current_page + 1) }}">Next</a>
+    </li>
+    <li class="page-item{% if current_page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/tokens?{{ get_qargs(page=total_pages) }}">Last</a>
+    </li>
+  </ul>
+</nav>
+{% endblock %}
