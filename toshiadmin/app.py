@@ -1017,15 +1017,20 @@ async def get_tokens(request, conf, current_user):
 
     async with conf.db.eth.acquire() as con:
         rows = await con.fetch(
-            "SELECT symbol, name, address, decimals FROM tokens ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+            "SELECT symbol, name, contract_address, decimals, format FROM tokens ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
             offset, limit)
         count = await con.fetchrow(
             "SELECT COUNT(*) FROM tokens")
 
     tokens = []
     for row in rows:
-        token = dict(row)
-        token['icon'] = "{}/token/{}.png".format(conf.urls.eth, token['symbol'])
+        token = {
+            'symbol': row['symbol'],
+            'name': row['name'],
+            'address': row['contract_address'],
+            'decimals': row['decimals']
+        }
+        token['icon'] = "{}/token/{}.{}".format(conf.urls.eth, row['contract_address'], row['format'])
         tokens.append(token)
 
     total_pages = (count['count'] // limit) + (0 if count['count'] % limit == 0 else 1)
@@ -1068,8 +1073,8 @@ async def create_token(request, conf, current_user):
     data, cache_hash, format = process_image(icon.body, icon.type)
 
     async with conf.db.eth.acquire() as con:
-        await con.execute("INSERT INTO tokens (address, symbol, name, decimals, icon, hash, format) VALUES ($1, $2, $3, $4, $5, $6, $7) "
-                          "ON CONFLICT (address) DO UPDATE "
+        await con.execute("INSERT INTO tokens (contract_address, symbol, name, decimals, icon, hash, format) VALUES ($1, $2, $3, $4, $5, $6, $7) "
+                          "ON CONFLICT (contract_address) DO UPDATE "
                           "SET symbol = EXCLUDED.symbol, name = EXCLUDED.name, decimals = EXCLUDED.decimals, icon = EXCLUDED.icon, hash = EXCLUDED.hash, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
                           contract_address, symbol, name, decimals, data, cache_hash, format.lower())
 
