@@ -1070,13 +1070,19 @@ async def create_token(request, conf, current_user):
 
     icon = request.files.get('icon')
 
-    data, cache_hash, format = process_image(icon.body, icon.type)
+    if icon is None or icon.body is None or len(icon.body) == 0:
+        data = None
+        cache_hash = None
+        format = None
+    else:
+        data, cache_hash, format = process_image(icon.body, icon.type)
+        format = format.lower()
 
     async with conf.db.eth.acquire() as con:
         await con.execute("INSERT INTO tokens (contract_address, symbol, name, decimals, icon, hash, format) VALUES ($1, $2, $3, $4, $5, $6, $7) "
                           "ON CONFLICT (contract_address) DO UPDATE "
                           "SET symbol = EXCLUDED.symbol, name = EXCLUDED.name, decimals = EXCLUDED.decimals, icon = EXCLUDED.icon, hash = EXCLUDED.hash, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
-                          contract_address, symbol, name, decimals, data, cache_hash, format.lower())
+                          contract_address, symbol, name, decimals, data, cache_hash, format)
 
     if 'Referer' in request.headers:
         return redirect(request.headers['Referer'])
