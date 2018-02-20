@@ -1070,7 +1070,12 @@ async def create_token(request, conf, current_user):
 
     icon = request.files.get('icon')
 
-    data, cache_hash, format = process_image(icon.body, icon.type)
+    if icon is None:
+        data = None
+        cache_hash = None
+        format = None
+    else:
+        data, cache_hash, format = process_image(icon.body, icon.type)
 
     async with conf.db.eth.acquire() as con:
         await con.execute("INSERT INTO tokens (contract_address, symbol, name, decimals, icon, hash, format) VALUES ($1, $2, $3, $4, $5, $6, $7) "
