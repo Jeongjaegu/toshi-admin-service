@@ -1,0 +1,55 @@
+<div id="table" class="table-editable">
+    <table class="table">
+        <thead>
+            <tr>
+                <th><a class="" href="?{{ get_qargs(order_by='created') }}">Avatar</a></th>
+                <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
+                <th>URL</th>
+                <th>Description</th>
+                <th>Action</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <!-- add a new dapp -->
+            <tr>
+                <form 
+                    id="add_new_dapp" 
+                    method="POST" 
+                    action="/{{ environment }}/dapp" 
+                    enctype="multipart/form-data"
+                >
+                    <td class="image-upload">
+                        <label for="new-avatar">
+                            <img src="http://via.placeholder.com/50x50" alt="placeholder"/>
+                        </label>
+                        <input id="new-avatar" class="js-avatar" type="file" name="avatar" accept="image/*"/>
+                    </td>
+                    <td><input placeholder="Name" name="name"></input></td>
+                    <td><input placeholder="URL" name="url"></input></td>
+                    <td><input placeholder="Description" name="description"></input></td>
+                    <td><input type="submit" value="Save"></input></td>
+                    <td></td>
+                </form>
+            </tr>
+
+            <!-- editable dapp list -->
+            {% for dapp in dapps %}
+            <tr class='dapp' data-entity-url='/{{ environment }}/dapp/{{ dapp.dapp_id }}'>
+                <td class="image-upload">
+                    <label for="file-input-{{ dapp.dapp_id }}">
+                        <img src="{{ dapp.avatar }}" alt="{{ dapp.name }}"/>
+                    </label>
+                    <input id="file-input-{{ dapp.dapp_id }}" class="js-avatar" type="file" name="avatar" accept="image/*"/>
+                </td>
+                <td class="js-name" contenteditable="true">{{ dapp.name }}</td>
+                <td class="js-dapp-url" contenteditable="true">{{ dapp.url }}</td>
+                <td class="js-desc" contenteditable="true">{{ dapp.description }}</td>
+                <td><button class="js-delete">Delete</button></td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>

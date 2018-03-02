@@ -1077,6 +1077,34 @@ async def create_token(request, conf, current_user):
         return redirect(request.headers['Referer'])
     return redirect("/{}/tokens".format(conf.name))
 
+@app.route("/dapp/<dapp_id>", prefixed=True, methods=["POST"])
+@requires_login
+async def update_dapp(request, conf, current_user, dapp_id):
+    name = request.form.get('name')
+    url = request.form.get('url')
+    description = request.form.get('description')
+    toshi_id = "0x{:040x}".format(int(dapp_id))
+
+    avatar = request.files.get('avatar')
+    if avatar:
+        data, cache_hash, format = process_image(avatar.body, avatar.type)
+
+        async with conf.db.id.acquire() as con:
+            await con.execute("INSERT INTO avatars (toshi_id, img, hash, format) VALUES ($1, $2, $3, $4) "
+                        "ON CONFLICT (toshi_id, hash) DO UPDATE "
+                        "SET img = EXCLUDED.img, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
+                        toshi_id, data, cache_hash, format)
+            avatar_url = "/avatar/{}_{}.{}".format(toshi_id, cache_hash[:6], 'jpg' if format == 'JPEG' else 'png')
+            
+            await con.execute("UPDATE dapps SET avatar = $2 WHERE dapp_id = $1", int(dapp_id), avatar_url)
+
+
+    async with conf.db.id.acquire() as con:
+        await con.execute("UPDATE dapps SET name = $2, url = $3, description = $4 WHERE dapp_id = $1", int(dapp_id), name, url, description)
+
+        if 'Referer' in request.headers:
+            return redirect(request.headers['Referer'])
+        return redirect("/{}/dapps".format(conf.name))
 
 @app.route("/dapp/<dapp_id>/delete", prefixed=True, methods=["POST"])
 @requires_login
