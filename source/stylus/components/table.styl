@@ -1,0 +1,28 @@
+.table-editable
+  tbody
+    tr
+      &:first-child 
+        background-color: gray
+
+        input 
+          padding: 1rem
+          border: 0
+
+      &:not(:first-child):hover
+        background-color: rgba(0,0,0,.075)
+    
+    td
+      vertical-align: text-bottom
+      cursor pointer
+
+      &:focus
+        background-color: white
+  
+  .image-upload
+    img 
+      width: 50px
+      height: auto
+      cursor: pointer
+
+    input
+      display: none
