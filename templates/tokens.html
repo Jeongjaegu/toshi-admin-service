@@ -14,6 +14,7 @@
       <th><a class="" href="?{{ get_qargs(order_by='address') }}">Contract Address</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='symbol') }}">Symbol</a></th>
       <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
+      <th>Decimals</th>
       <th></th>
     </tr>
   </thead>
@@ -31,6 +32,9 @@
         {{ token.name }}
       </td>
       <td>
+        {{ token.decimals }}
+      </td>
+      <td>
         <form id="delete_token_form_{{ token.contract_address }}" method="POST" action="/{{ environment }}/token/{{ token.contract_address }}/delete">
           <input type="submit" value="delete"></input>
         </form>
@@ -43,7 +47,7 @@
       <td><input placeholder="symbol..." name="symbol"></input></td>
       <td><input placeholder="name..." name="name"></input></td>
       <td><input placeholder="0x..." name="contract_address"></input></td>
-      <td><input placeholder="..." name="decimals"></input></td>
+      <td><input placeholder="decimals..." name="decimals"></input></td>
       <td>avatar: <input type="file" name="icon" accept="image/*"></input></td>
       <td><input type="submit" value="save"></input></td>
     </form>
