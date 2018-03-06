@@ -79,18 +79,16 @@ $("div.edit_category").dblclick((e) => {
 });
 
 //edit dapp 
-$('tr.dapp').one('input change', function() {
+$('tr.dapp').on('input change', function() {
     var tr = $(this),
-        td = $('<td></td>'),
-        saveChangesButton = $('<button class="js-update" type="submit">Save Changes</button>'),
+        saveChangesButton = $('<td><button class="js-update" type="submit">Save Changes</button></td>'),
         button = tr.find('.js-update');
 
    if(button.length){
        return;
    } 
 
-    td.append(saveChangesButton);    
-    tr.append(td);
+    tr.append(saveChangesButton);    
 
     saveChangesButton.click(function(){
         saveChangesButton.attr('disabled', true);
@@ -114,10 +112,10 @@ $('tr.dapp').one('input change', function() {
             processData: false,
             contentType:false,
         }).done(function(success){
+            saveChangesButton.remove();
         }).fail(function(jqXHR, textStatus, errorThrown){
             console.log(jqXHR, textStatus, errorThrown);
         }).always(function(){
-            saveChangesButton.remove();
             saveChangesButton.attr('disabled', false);
         });
     });
