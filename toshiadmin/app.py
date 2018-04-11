@@ -639,11 +639,11 @@ async def get_users(request, conf, current_user):
                "WHERE (tsv @@ q){}) AS t1 "
                "{} "
                "OFFSET $1 LIMIT $2"
-               .format(" AND is_app = $4" if filter_by == 'is_app' else "", query_order))
+               .format(" AND is_bot = $4" if filter_by == 'is_app' else "", query_order))
         count_args = [query]
         count_sql = ("SELECT COUNT(*) FROM users, TO_TSQUERY($1) AS q "
                      "WHERE (tsv @@ q){}"
-                     .format(" AND is_app = $2" if filter_by == 'is_app' is not None else ""))
+                     .format(" AND is_bot = $2" if filter_by == 'is_app' is not None else ""))
         if filter_by == 'is_app':
             args.append(True)
             count_args.append(True)
@@ -654,10 +654,10 @@ async def get_users(request, conf, current_user):
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(
                 "SELECT * FROM users {} ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(
-                    "WHERE is_app = true" if filter_by == 'is_app' else "", *order),
+                    "WHERE is_bot = true" if filter_by == 'is_app' else "", *order),
                 offset, limit)
             count = await con.fetchrow(
-                "SELECT COUNT(*) FROM users {}".format("WHERE is_app = true" if filter_by == 'is_app' else ""))
+                "SELECT COUNT(*) FROM users {}".format("WHERE is_bot = true" if filter_by == 'is_app' else ""))
     users = []
     for row in rows:
         usr = fix_avatar_for_user(conf.urls.id, dict(row))
@@ -791,11 +791,11 @@ async def get_user(request, conf, current_user, toshi_id):
     reports_given = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_given_rows]
     reports_received = [fix_avatar_for_user(conf.urls.id, dict(report)) for report in reports_received_rows]
 
-    if usr['is_app']:
+    if usr['is_bot']:
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(
-                "SELECT * FROM categories JOIN app_categories "
-                "ON categories.category_id = app_categories.category_id "
+                "SELECT * FROM categories JOIN bot_categories "
+                "ON categories.category_id = bot_categories.category_id "
                 "WHERE toshi_id = $1", toshi_id)
         categories = ", ".join([row['tag'] for row in rows])
         usr['categories'] = categories
@@ -843,23 +843,23 @@ async def get_apps(request, conf, current_user):
             query_order = "ORDER BY TS_RANK_CD(t1.tsv, TO_TSQUERY($3)) DESC, name, username"
         sql = ("SELECT * FROM "
                "(SELECT * FROM users, TO_TSQUERY($3) AS q "
-               "WHERE (tsv @@ q) AND is_app = true) AS t1 "
+               "WHERE (tsv @@ q) AND is_bot = true) AS t1 "
                "{} "
                "OFFSET $1 LIMIT $2"
                .format(query_order))
         count_args = [query]
         count_sql = ("SELECT COUNT(*) FROM users, TO_TSQUERY($1) AS q "
-                     "WHERE (tsv @@ q) AND is_app = true")
+                     "WHERE (tsv @@ q) AND is_bot = true")
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(sql, *args)
             count = await con.fetchrow(count_sql, *count_args)
     else:
         async with conf.db.id.acquire() as con:
             rows = await con.fetch(
-                "SELECT * FROM users WHERE is_app = true ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
+                "SELECT * FROM users WHERE is_bot = true ORDER BY {} {} NULLS LAST OFFSET $1 LIMIT $2".format(*order),
                 offset, limit)
             count = await con.fetchrow(
-                "SELECT COUNT(*) FROM users WHERE is_app = true")
+                "SELECT COUNT(*) FROM users WHERE is_bot = true")
 
     apps = []
     for row in rows:
@@ -1106,7 +1106,7 @@ async def update_dapp(request, conf, current_user, dapp_id):
                         "SET img = EXCLUDED.img, format = EXCLUDED.format, last_modified = (now() AT TIME ZONE 'utc')",
                         toshi_id, data, cache_hash, format)
             avatar_url = "/avatar/{}_{}.{}".format(toshi_id, cache_hash[:6], 'jpg' if format == 'JPEG' else 'png')
-            
+
             await con.execute("UPDATE dapps SET avatar = $2 WHERE dapp_id = $1", int(dapp_id), avatar_url)
 
 
@@ -1168,9 +1168,9 @@ async def update_app_categories_handler(request, conf, current_user):
             categories = await con.fetch("SELECT * FROM categories WHERE tag = ANY($1)", tags)
             categories = [row['category_id'] for row in categories]
             async with con.transaction():
-                await con.execute("DELETE FROM app_categories WHERE toshi_id = $1", toshi_id)
+                await con.execute("DELETE FROM bot_categories WHERE toshi_id = $1", toshi_id)
                 await con.executemany(
-                    "INSERT INTO app_categories VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    "INSERT INTO bot_categories VALUES ($1, $2) ON CONFLICT DO NOTHING",
                     [(category_id, toshi_id) for category_id in categories])
         if 'Referer' in request.headers:
             return redirect(request.headers['Referer'])
@@ -1329,13 +1329,13 @@ async def migrate_users(request, current_user):
 
     async with app.configs[from_env].db.id.acquire() as con:
         if apps_flag == 'on':
-            users = await con.fetch("SELECT * FROM users WHERE is_app = TRUE")
+            users = await con.fetch("SELECT * FROM users WHERE is_bot = TRUE")
             print("APPS", len(users))
             user_rows = list(users)
         else:
             user_rows = []
         if users_flag == 'on':
-            users = await con.fetch("SELECT * FROM users WHERE is_app = FALSE OFFSET $1 LIMIT $2", offset, limit)
+            users = await con.fetch("SELECT * FROM users WHERE is_bot = FALSE OFFSET $1 LIMIT $2", offset, limit)
             print("USERS", len(users))
             user_rows.extend(list(users))
         if len(toshi_ids) > 0:
@@ -1347,7 +1347,7 @@ async def migrate_users(request, current_user):
         users = []
         avatars = []
         for row in user_rows:
-            users.append((row['toshi_id'], row['payment_address'], row['created'], row['updated'], row['username'], row['name'], row['avatar'], row['about'], row['location'], row['is_public'], row['went_public'], row['is_app'], row['featured']))
+            users.append((row['toshi_id'], row['payment_address'], row['created'], row['updated'], row['username'], row['name'], row['avatar'], row['about'], row['location'], row['is_public'], row['went_public'], row['is_bot'], row['featured']))
         for row in avatar_rows:
             avatars.append((row['toshi_id'], row['img'], row['hash'], row['format'], row['last_modified']))
 
@@ -1356,7 +1356,7 @@ async def migrate_users(request, current_user):
     async with app.configs[to_env].db.id.acquire() as con:
         rval = await con.executemany(
             "INSERT INTO users ("
-            "toshi_id, payment_address, created, updated, username, name, avatar, about, location, is_public, went_public, is_app, featured"
+            "toshi_id, payment_address, created, updated, username, name, avatar, about, location, is_public, went_public, is_bot, featured"
             ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) "
             "ON CONFLICT DO NOTHING",
             users)
