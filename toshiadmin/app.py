@@ -298,8 +298,7 @@ async def liveordev(request, conf, user):
             "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '7 days'")
         tx1m = await con.fetchrow(
             "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '1 month'")
-        txtotal = await con.fetchrow(
-            "SELECT COUNT(*) FROM transactions")
+        txtotal = {'count': "N/A"}
         last_block = await con.fetchrow("SELECT * FROM last_blocknumber")
 
     async with conf.db.id.acquire() as con:
