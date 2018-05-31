@@ -298,7 +298,8 @@ async def liveordev(request, conf, user):
             "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '7 days'")
         tx1m = await con.fetchrow(
             "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '1 month'")
-        txtotal = {'count': "N/A"}
+        txtotal = await con.fetchrow(
+            "SELECT COUNT(*) FROM transactions WHERE created > (now() AT TIME ZONE 'utc') - interval '10 years'")
         last_block = await con.fetchrow("SELECT * FROM last_blocknumber")
 
     async with conf.db.id.acquire() as con:
@@ -503,12 +504,12 @@ async def get_txs(request, conf, user):
         page = 1
     limit = 10
     offset = (page - 1) * limit
-    where_clause = 'WHERE v IS NOT NULL'
+    where_clause = 'WHERE blocknumber > 1000000 AND v IS NOT NULL'
     filters = [f for f in request.args.getlist('filter', []) if f in ['confirmed', 'unconfirmed', 'error']]
     if filters:
         where_clause += " AND (" + " OR ".join("status = '{}'".format(f) for f in filters)
         if 'unconfirmed' in filters:
-            where_clause += " OR status IS NULL"
+            where_clause += " OR status == 'new'"
         where_clause += ")"
 
     async with conf.db.eth.acquire() as con:
