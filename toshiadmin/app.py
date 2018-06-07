@@ -509,7 +509,7 @@ async def get_txs(request, conf, user):
     if filters:
         where_clause += " AND (" + " OR ".join("status = '{}'".format(f) for f in filters)
         if 'unconfirmed' in filters:
-            where_clause += " OR status == 'new'"
+            where_clause += " OR status = 'new' OR status = 'queued'"
         where_clause += ")"
 
     async with conf.db.eth.acquire() as con:
